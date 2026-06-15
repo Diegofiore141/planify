@@ -1,10 +1,11 @@
 import { Link, useNavigate } from 'react-router'
 import { signOut } from 'firebase/auth'
 import { auth } from '../services/firebase'
+import { useAuth } from '../context/AuthContext'
 
 function Dashboard() {
   const navigate = useNavigate()
-  const user = auth.currentUser
+  const { user } = useAuth()
 
   async function handleLogout() {
     await signOut(auth)
