@@ -9,6 +9,7 @@ import Login from './pages/Login'
 import Register from './pages/Register'
 import Dashboard from './pages/Dashboard'
 import Events from './pages/Events'
+import Tasks from './pages/Tasks'
 
 function App() {
   return (
@@ -33,6 +34,15 @@ function App() {
             element={
               <ProtectedRoute>
                 <Events />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/tasks"
+            element={
+              <ProtectedRoute>
+                <Tasks />
               </ProtectedRoute>
             }
           />

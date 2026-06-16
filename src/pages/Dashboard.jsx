@@ -29,6 +29,10 @@ function Dashboard() {
             Gestisci eventi
           </Link>
 
+          <Link to="/tasks" className="btn btn-primary">
+            Gestisci attività
+          </Link>
+
           <button className="btn btn-primary" onClick={handleLogout}>
             Esci
           </button>
