@@ -25,6 +25,10 @@ function Dashboard() {
         </p>
 
         <div className="dashboard-actions">
+          <Link to="/events" className="btn btn-primary">
+            Gestisci eventi
+          </Link>
+
           <button className="btn btn-primary" onClick={handleLogout}>
             Esci
           </button>

@@ -8,6 +8,7 @@ import Home from './pages/Home'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import Dashboard from './pages/Dashboard'
+import Events from './pages/Events'
 
 function App() {
   return (
@@ -23,6 +24,15 @@ function App() {
             element={
               <ProtectedRoute>
                 <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/events"
+            element={
+              <ProtectedRoute>
+                <Events />
               </ProtectedRoute>
             }
           />
