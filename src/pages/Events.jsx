@@ -9,9 +9,11 @@ import {
   orderBy,
   query,
   serverTimestamp,
+  updateDoc,
 } from 'firebase/firestore'
 import { db } from '../services/firebase'
 import { useAuth } from '../context/AuthContext'
+import { getWeatherForCity } from '../services/weather'
 
 function Events() {
   const { user } = useAuth()
@@ -23,6 +25,12 @@ function Events() {
   const [location, setLocation] = useState('')
   const [description, setDescription] = useState('')
   const [error, setError] = useState('')
+
+  const [editEventId, setEditEventId] = useState(null)
+
+  const [weatherByEvent, setWeatherByEvent] = useState({})
+  const [weatherLoading, setWeatherLoading] = useState('')
+  const [weatherError, setWeatherError] = useState('')
 
   useEffect(() => {
     if (!user) return
@@ -42,7 +50,17 @@ function Events() {
     return () => unsubscribe()
   }, [user])
 
-  async function handleAddEvent(event) {
+  function resetForm() {
+    setTitle('')
+    setDate('')
+    setTime('')
+    setLocation('')
+    setDescription('')
+    setEditEventId(null)
+    setError('')
+  }
+
+  async function handleSaveEvent(event) {
     event.preventDefault()
 
     if (!title || !date) {
@@ -51,6 +69,27 @@ function Events() {
     }
 
     setError('')
+
+    if (editEventId) {
+      const eventRef = doc(db, 'users', user.uid, 'events', editEventId)
+
+      await updateDoc(eventRef, {
+        title,
+        date,
+        time,
+        location,
+        description,
+      })
+
+      setWeatherByEvent((previousWeather) => {
+        const updatedWeather = { ...previousWeather }
+        delete updatedWeather[editEventId]
+        return updatedWeather
+      })
+
+      resetForm()
+      return
+    }
 
     const eventsRef = collection(db, 'users', user.uid, 'events')
 
@@ -63,16 +102,72 @@ function Events() {
       createdAt: serverTimestamp(),
     })
 
-    setTitle('')
-    setDate('')
-    setTime('')
-    setLocation('')
-    setDescription('')
+    resetForm()
+  }
+
+  function handleStartEdit(eventItem) {
+    setEditEventId(eventItem.id)
+    setTitle(eventItem.title || '')
+    setDate(eventItem.date || '')
+    setTime(eventItem.time || '')
+    setLocation(eventItem.location || '')
+    setDescription(eventItem.description || '')
+    setError('')
+    setWeatherError('')
   }
 
   async function handleDeleteEvent(eventId) {
     const eventRef = doc(db, 'users', user.uid, 'events', eventId)
     await deleteDoc(eventRef)
+
+    setWeatherByEvent((previousWeather) => {
+      const updatedWeather = { ...previousWeather }
+      delete updatedWeather[eventId]
+      return updatedWeather
+    })
+
+    if (editEventId === eventId) {
+      resetForm()
+    }
+  }
+
+  async function handleShowWeather(eventItem) {
+    if (!eventItem.location) {
+      setWeatherError('Inserisci un luogo per vedere il meteo.')
+      return
+    }
+
+    if (!eventItem.date || !eventItem.time) {
+      setWeatherError('Inserisci data e ora per vedere il meteo previsto.')
+      return
+    }
+
+    setWeatherError('')
+    setWeatherLoading(eventItem.id)
+
+    setWeatherByEvent((previousWeather) => {
+      const updatedWeather = { ...previousWeather }
+      delete updatedWeather[eventItem.id]
+      return updatedWeather
+    })
+
+    try {
+      const weather = await getWeatherForCity(
+        eventItem.location,
+        eventItem.date,
+        eventItem.time
+      )
+
+      setWeatherByEvent((previousWeather) => ({
+        ...previousWeather,
+        [eventItem.id]: weather,
+      }))
+    } catch (error) {
+      console.error(error)
+      setWeatherError('Meteo non disponibile per questo luogo, data o ora.')
+    } finally {
+      setWeatherLoading('')
+    }
   }
 
   return (
@@ -90,8 +185,8 @@ function Events() {
         </div>
 
         <div className="events-grid">
-          <form className="event-form" onSubmit={handleAddEvent}>
-            <h2>Nuovo evento</h2>
+          <form className="event-form" onSubmit={handleSaveEvent}>
+            <h2>{editEventId ? 'Modifica evento' : 'Nuovo evento'}</h2>
 
             <label>
               Titolo
@@ -125,7 +220,7 @@ function Events() {
               Luogo
               <input
                 type="text"
-                placeholder="Es. Online, Università, Casa..."
+                placeholder="Es. Pisa, Firenze, Forcoli..."
                 value={location}
                 onChange={(event) => setLocation(event.target.value)}
               />
@@ -143,12 +238,24 @@ function Events() {
             {error && <p className="error-message">{error}</p>}
 
             <button type="submit" className="btn btn-primary">
-              Salva evento
+              {editEventId ? 'Aggiorna evento' : 'Salva evento'}
             </button>
+
+            {editEventId && (
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={resetForm}
+              >
+                Annulla modifica
+              </button>
+            )}
           </form>
 
           <div className="events-list">
             <h2>Eventi salvati</h2>
+
+            {weatherError && <p className="error-message">{weatherError}</p>}
 
             {events.length === 0 ? (
               <p className="empty-message">Non hai ancora eventi salvati.</p>
@@ -165,14 +272,45 @@ function Events() {
 
                     {event.location && <p>📍 {event.location}</p>}
                     {event.description && <p>{event.description}</p>}
+
+                    {weatherByEvent[event.id] && (
+                      <div className="weather-box">
+                        <strong>
+                          Meteo a {weatherByEvent[event.id].city} ({event.time})
+                        </strong>
+
+                        <p>
+                          {weatherByEvent[event.id].temperature}°C -{' '}
+                          {weatherByEvent[event.id].description}
+                        </p>
+                      </div>
+                    )}
                   </div>
 
-                  <button
-                    className="btn btn-danger"
-                    onClick={() => handleDeleteEvent(event.id)}
-                  >
-                    Elimina
-                  </button>
+                  <div className="event-actions">
+                    <button
+                      className="btn btn-secondary"
+                      onClick={() => handleStartEdit(event)}
+                    >
+                      Modifica
+                    </button>
+
+                    <button
+                      className="btn btn-secondary"
+                      onClick={() => handleShowWeather(event)}
+                    >
+                      {weatherLoading === event.id
+                        ? 'Caricamento...'
+                        : 'Vedi meteo'}
+                    </button>
+
+                    <button
+                      className="btn btn-danger"
+                      onClick={() => handleDeleteEvent(event.id)}
+                    >
+                      Elimina
+                    </button>
+                  </div>
                 </article>
               ))
             )}

@@ -664,3 +664,27 @@ button {
     flex-direction: column;
   }
 }
+
+.event-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-self: start;
+}
+
+.weather-box {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+}
+
+.weather-box strong {
+  color: #1d4ed8;
+}
+
+.weather-box p {
+  margin: 6px 0 0;
+  color: #334155;
+}
