@@ -688,3 +688,43 @@ button {
   margin: 6px 0 0;
   color: #334155;
 }
+
+.offline-page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background:
+    radial-gradient(circle at top left, rgba(37, 99, 235, 0.18), transparent 35%),
+    linear-gradient(135deg, #eef2ff 0%, #f8fafc 50%, #e0f2fe 100%);
+}
+
+.offline-card-react {
+  width: 100%;
+  max-width: 460px;
+  padding: 34px;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 25px 70px rgba(15, 23, 42, 0.14);
+  text-align: center;
+}
+
+.offline-logo {
+  width: 82px;
+  height: 82px;
+  border-radius: 18px;
+  object-fit: cover;
+  margin-bottom: 16px;
+}
+
+.offline-card-react h1 {
+  margin: 0 0 12px;
+  font-size: 32px;
+  color: #0f172a;
+}
+
+.offline-card-react p {
+  color: #64748b;
+  line-height: 1.6;
+  margin-bottom: 24px;
+}

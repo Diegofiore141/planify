@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router'
 import './App.css'
 
@@ -10,8 +11,55 @@ import Register from './pages/Register'
 import Dashboard from './pages/Dashboard'
 import Events from './pages/Events'
 import Tasks from './pages/Tasks'
+import Offline from './pages/Offline'
 
 function App() {
+  const [isOnline, setIsOnline] = useState(true)
+
+  useEffect(() => {
+    async function checkConnection() {
+      if (!navigator.onLine) {
+        setIsOnline(false)
+        return
+      }
+
+      try {
+        await fetch(`/online-check.txt?time=${Date.now()}`, {
+          cache: 'no-store',
+        })
+
+        setIsOnline(true)
+      } catch (error) {
+        setIsOnline(false)
+      }
+    }
+
+    function handleOnline() {
+      checkConnection()
+    }
+
+    function handleOffline() {
+      setIsOnline(false)
+    }
+
+    checkConnection()
+
+    window.addEventListener('online', handleOnline)
+    window.addEventListener('offline', handleOffline)
+
+    const intervalId = setInterval(checkConnection, 3000)
+
+    return () => {
+      window.removeEventListener('online', handleOnline)
+      window.removeEventListener('offline', handleOffline)
+      clearInterval(intervalId)
+    }
+  }, [])
+
+  if (!isOnline) {
+    return <Offline />
+  }
+
   return (
     <AuthProvider>
       <BrowserRouter>
