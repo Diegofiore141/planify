@@ -21,7 +21,7 @@ function Dashboard() {
 
         <p>
           Questa sarà l’area personale dove verranno mostrati eventi, scadenze,
-          attività e notifiche.
+          attività, calendario e notifiche.
         </p>
 
         <div className="dashboard-actions">
@@ -31,6 +31,10 @@ function Dashboard() {
 
           <Link to="/tasks" className="btn btn-primary">
             Gestisci attività
+          </Link>
+
+          <Link to="/calendar" className="btn btn-primary">
+            Calendario
           </Link>
 
           <Link to="/notifications" className="btn btn-primary">
