@@ -12,6 +12,7 @@ import Dashboard from './pages/Dashboard'
 import Events from './pages/Events'
 import Tasks from './pages/Tasks'
 import Offline from './pages/Offline'
+import Notifications from './pages/Notifications'
 
 function App() {
   const [isOnline, setIsOnline] = useState(true)
@@ -91,6 +92,15 @@ function App() {
             element={
               <ProtectedRoute>
                 <Tasks />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/notifications"
+            element={
+              <ProtectedRoute>
+                <Notifications />
               </ProtectedRoute>
             }
           />

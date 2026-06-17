@@ -33,6 +33,10 @@ function Dashboard() {
             Gestisci attività
           </Link>
 
+          <Link to="/notifications" className="btn btn-primary">
+            Notifiche
+          </Link>
+
           <button className="btn btn-primary" onClick={handleLogout}>
             Esci
           </button>
