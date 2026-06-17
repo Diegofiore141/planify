@@ -4,88 +4,82 @@ import logo from '../assets/logo.png'
 
 const previewDays = [
   {
-    title: 'Ieri',
-    tasks: [
+    label: 'Oggi',
+    title: 'Organizza la giornata',
+    items: [
       {
-        icon: '✓',
-        title: 'Riunione completata',
-        description: 'Attività conclusa correttamente',
-        completed: true,
-      },
-      {
-        icon: '✓',
-        title: 'Spesa settimanale',
-        description: 'Promemoria completato',
-        completed: true,
-      },
-      {
-        icon: '☁',
-        title: 'Passeggiata serale',
-        description: 'Meteo consultato',
-        completed: false,
-      },
-    ],
-  },
-  {
-    title: 'Oggi',
-    tasks: [
-      {
-        icon: '✓',
-        title: 'Lezione',
-        description: 'Completata',
-        completed: true,
-      },
-      {
-        icon: '!',
-        title: 'Consegna progetto',
-        description: 'Scadenza alle 18:00',
-        completed: false,
-      },
-      {
-        icon: '☁',
+        icon: '📅',
         title: 'Evento all’aperto',
-        description: 'Meteo disponibile',
-        completed: false,
+        text: 'Meteo disponibile alle 18:00',
+      },
+      {
+        icon: '✅',
+        title: 'Finire progetto',
+        text: 'Priorità alta · Scadenza oggi',
+      },
+      {
+        icon: '🔔',
+        title: 'Promemoria attivo',
+        text: 'Notifica evento programmata',
       },
     ],
   },
   {
-    title: 'Domani',
-    tasks: [
+    label: 'Settimana',
+    title: 'Tieni tutto sotto controllo',
+    items: [
       {
-        icon: '!',
-        title: 'Appuntamento personale',
-        description: 'Promemoria attivo',
-        completed: false,
+        icon: '🗓️',
+        title: 'Lezione universitaria',
+        text: 'Mercoledì alle 10:30',
       },
       {
         icon: '📌',
-        title: 'Organizzare attività',
-        description: 'Da pianificare',
-        completed: false,
+        title: 'Consegna attività',
+        text: 'Priorità media',
       },
       {
-        icon: '☁',
-        title: 'Controllo meteo',
-        description: 'Previsione disponibile',
-        completed: false,
+        icon: '📲',
+        title: 'App installabile',
+        text: 'Accesso rapido come PWA',
+      },
+    ],
+  },
+  {
+    label: 'Offline',
+    title: 'Anche senza connessione',
+    items: [
+      {
+        icon: '📴',
+        title: 'Pagina offline',
+        text: 'Fallback personalizzato',
+      },
+      {
+        icon: '🔄',
+        title: 'Riprova connessione',
+        text: 'Controllo automatico dello stato online',
+      },
+      {
+        icon: '🔐',
+        title: 'Dati protetti',
+        text: 'Accesso separato per ogni utente',
       },
     ],
   },
 ]
 
 function Home() {
-  const [activeDay, setActiveDay] = useState(1)
+  const [activePreview, setActivePreview] = useState(0)
 
-  const currentDay = previewDays[activeDay]
+  const currentPreview = previewDays[activePreview]
 
   return (
     <main className="app">
       <nav className="navbar">
-        <div className="logo">
+        <Link to="/" className="logo">
           <img src={logo} alt="Logo Planify" className="logo-image" />
           <span>Planify</span>
-        </div>
+        </Link>
 
         <div className="nav-actions">
           <Link to="/login" className="btn btn-ghost">
@@ -98,75 +92,174 @@ function Home() {
         </div>
       </nav>
 
-      <section className="hero">
-        <div className="hero-content">
-          <span className="badge">Per organizzare i tuoi impegni</span>
+      <section className="home-v2-hero">
+        <div className="home-v2-content">
+          <span className="home-v2-badge">
+            Eventi, attività e promemoria in un’unica app
+          </span>
 
-          <h1>Organizza eventi, scadenze e attività in un unico posto</h1>
+          <h1>Organizza la tua giornata con Planify.</h1>
 
           <p>
-            Planify ti aiuta a gestire promemoria, attività personali ed eventi,
-            con accesso utente, notifiche e funzionalità offline.
+            Crea eventi, gestisci attività, controlla le scadenze e visualizza
+            tutto in un calendario interattivo con notifiche, meteo e supporto
+            offline.
           </p>
 
-          <div className="hero-buttons">
+          <div className="home-v2-actions">
             <Link to="/register" className="btn btn-primary large">
               Inizia ora
             </Link>
 
-            <a href="#features" className="btn btn-secondary large">
-              Scopri di più
-            </a>
+            <Link to="/login" className="btn btn-secondary large">
+              Accedi
+            </Link>
+          </div>
+
+          <div className="home-v2-highlights">
+            <div>
+              <strong>Calendario</strong>
+              <span>Drag & drop</span>
+            </div>
+
+            <div>
+              <strong>Notifiche</strong>
+              <span>Promemoria eventi</span>
+            </div>
+
+            <div>
+              <strong>PWA</strong>
+              <span>Installabile e offline</span>
+            </div>
           </div>
         </div>
 
-        <div className="preview-card">
-          <div className="card-header">
+        <div className="home-v2-preview-card">
+          <div className="home-v2-preview-top">
+            <div>
+              <span>Anteprima Planify</span>
+              <h2>{currentPreview.title}</h2>
+            </div>
+
+            <div className="home-v2-preview-dots">
+              {previewDays.map((day, index) => (
+                <button
+                  key={day.label}
+                  className={
+                    activePreview === index
+                      ? 'home-v2-dot active'
+                      : 'home-v2-dot'
+                  }
+                  onClick={() => setActivePreview(index)}
+                  aria-label={`Mostra ${day.label}`}
+                ></button>
+              ))}
+            </div>
+          </div>
+
+          <div className="home-v2-preview-tabs">
             {previewDays.map((day, index) => (
               <button
-                key={day.title}
-                className={activeDay === index ? 'dot active' : 'dot'}
-                onClick={() => setActiveDay(index)}
-                aria-label={`Mostra ${day.title}`}
-              ></button>
+                key={day.label}
+                className={
+                  activePreview === index
+                    ? 'home-v2-tab active'
+                    : 'home-v2-tab'
+                }
+                onClick={() => setActivePreview(index)}
+              >
+                {day.label}
+              </button>
             ))}
           </div>
 
-          <h3>{currentDay.title}</h3>
+          <div className="home-v2-preview-list">
+            {currentPreview.items.map((item) => (
+              <article className="home-v2-preview-item" key={item.title}>
+                <span>{item.icon}</span>
 
-          {currentDay.tasks.map((task, index) => (
-            <div
-              className={task.completed ? 'task completed' : 'task'}
-              key={index}
-            >
-              <span>{task.icon}</span>
-              <div>
-                <strong>{task.title}</strong>
-                <p>{task.description}</p>
-              </div>
-            </div>
-          ))}
+                <div>
+                  <strong>{item.title}</strong>
+                  <p>{item.text}</p>
+                </div>
+              </article>
+            ))}
+          </div>
         </div>
       </section>
 
-      <section className="features" id="features">
+      <section className="home-v2-features">
         <article>
-          <h3>Eventi</h3>
-          <p>Crea e organizza appuntamenti, scadenze e promemoria personali.</p>
-        </article>
-
-        <article>
-          <h3>Notifiche</h3>
-          <p>Ricevi avvisi per ricordarti attività o eventi imminenti.</p>
-        </article>
-
-        <article>
-          <h3>Offline</h3>
+          <span>📅</span>
+          <h3>Calendario interattivo</h3>
           <p>
-            Anche senza connessione, Planify mostra una pagina offline
-            personalizzata invece del normale errore del browser.
+            Visualizza eventi e attività in una vista mensile, settimanale o
+            giornaliera. Puoi creare, modificare e spostare gli impegni
+            direttamente dal calendario.
           </p>
         </article>
+
+        <article>
+          <span>✅</span>
+          <h3>Attività con priorità</h3>
+          <p>
+            Organizza le cose da fare con scadenze e priorità colorate, così è
+            più semplice capire cosa completare prima.
+          </p>
+        </article>
+
+        <article>
+          <span>🌤️</span>
+          <h3>Meteo sugli eventi</h3>
+          <p>
+            Per gli eventi con luogo, data e ora, Planify può recuperare una
+            previsione meteo tramite API esterna.
+          </p>
+        </article>
+
+        <article>
+          <span>🔔</span>
+          <h3>Promemoria</h3>
+          <p>
+            Attiva notifiche locali per ricordarti gli eventi programmati mentre
+            Planify è aperta nel browser.
+          </p>
+        </article>
+
+        <article>
+          <span>📲</span>
+          <h3>PWA installabile</h3>
+          <p>
+            Planify è pensata come Progressive Web App: può essere installata e
+            include una pagina offline personalizzata.
+          </p>
+        </article>
+
+        <article>
+          <span>🔐</span>
+          <h3>Area personale</h3>
+          <p>
+            Ogni utente autenticato accede ai propri eventi e alle proprie
+            attività salvate su Firestore.
+          </p>
+        </article>
+      </section>
+
+      <section className="home-v2-cta">
+        <div>
+          <span className="home-v2-badge">Pronto a organizzarti?</span>
+
+          <h2>Accedi alla tua area personale e inizia a pianificare.</h2>
+
+          <p>
+            Dashboard, calendario, eventi, attività e notifiche sono raccolti in
+            un’unica esperienza semplice e ordinata.
+          </p>
+        </div>
+
+        <Link to="/register" className="btn btn-primary large">
+          Crea un account
+        </Link>
       </section>
     </main>
   )
