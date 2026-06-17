@@ -59,6 +59,14 @@
       button:hover {
         background: #1d4ed8;
       }
+
+      #status-message {
+        margin-top: 18px;
+        margin-bottom: 0;
+        color: #64748b;
+        font-size: 14px;
+        font-weight: 700;
+      }
     </style>
   </head>
 
@@ -69,10 +77,31 @@
       <h1>Sei offline</h1>
 
       <p>
-        Al momento non hai connessione.
+        Al momento non hai connessione. Planify mostra questa pagina offline
+        invece del normale errore del browser.
       </p>
 
-      <button onclick="window.location.reload()">Riprova</button>
+      <button onclick="handleRetry()">Riprova</button>
+
+      <p id="status-message"></p>
     </main>
+
+    <script>
+      async function handleRetry() {
+        const statusMessage = document.getElementById('status-message')
+        statusMessage.textContent = 'Controllo connessione...'
+
+        try {
+          await fetch('/online-check.txt?time=' + Date.now(), {
+            cache: 'no-store',
+          })
+
+          window.location.reload()
+        } catch (error) {
+          statusMessage.textContent =
+            'Sei ancora offline. Riprova quando la connessione torna disponibile.'
+        }
+      }
+    </script>
   </body>
 </html>

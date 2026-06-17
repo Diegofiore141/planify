@@ -1,8 +1,21 @@
+import { useState } from 'react'
 import logo from '../assets/logo.png'
 
 function Offline() {
-  function handleRetry() {
-    window.location.reload()
+  const [message, setMessage] = useState('')
+
+  async function handleRetry() {
+    setMessage('Controllo connessione...')
+
+    try {
+      await fetch(`/online-check.txt?time=${Date.now()}`, {
+        cache: 'no-store',
+      })
+
+      window.location.reload()
+    } catch (error) {
+      setMessage('Sei ancora offline. Riprova quando la connessione torna disponibile.')
+    }
   }
 
   return (
@@ -56,12 +69,27 @@ function Offline() {
             marginBottom: '24px',
           }}
         >
-          Al momento non hai connessione.
+          Al momento non hai connessione. Planify mostra questa schermata
+          invece del normale errore del browser.
         </p>
 
         <button className="btn btn-primary" onClick={handleRetry}>
           Riprova
         </button>
+
+        {message && (
+          <p
+            style={{
+              marginTop: '18px',
+              marginBottom: 0,
+              color: '#64748b',
+              fontSize: '14px',
+              fontWeight: 700,
+            }}
+          >
+            {message}
+          </p>
+        )}
       </section>
     </main>
   )
