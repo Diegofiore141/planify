@@ -2,9 +2,12 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router'
 import {
   collection,
+  deleteDoc,
+  doc,
   onSnapshot,
   orderBy,
   query,
+  updateDoc,
 } from 'firebase/firestore'
 
 import FullCalendar from '@fullcalendar/react'
@@ -16,11 +19,58 @@ import itLocale from '@fullcalendar/core/locales/it'
 import { db } from '../services/firebase'
 import { useAuth } from '../context/AuthContext'
 
+function getPriorityLabel(priority) {
+  if (priority === 'alta') return 'Alta'
+  if (priority === 'bassa') return 'Bassa'
+  return 'Media'
+}
+
+function getPriorityClass(priority) {
+  if (priority === 'alta') return 'task-priority-alta'
+  if (priority === 'bassa') return 'task-priority-bassa'
+  return 'task-priority-media'
+}
+
+function formatDate(date) {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+
+  return `${year}-${month}-${day}`
+}
+
+function formatTime(date) {
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+
+  return `${hours}:${minutes}`
+}
+
 function Calendar() {
   const { user } = useAuth()
 
   const [events, setEvents] = useState([])
   const [tasks, setTasks] = useState([])
+  const [selectedItem, setSelectedItem] = useState(null)
+  const [isEditing, setIsEditing] = useState(false)
+  const [popupError, setPopupError] = useState('')
+  const [calendarMessage, setCalendarMessage] = useState('')
+  const [calendarError, setCalendarError] = useState('')
+
+  const [eventForm, setEventForm] = useState({
+    title: '',
+    date: '',
+    time: '',
+    location: '',
+    description: '',
+  })
+
+  const [taskForm, setTaskForm] = useState({
+    text: '',
+    dueDate: '',
+    priority: 'media',
+    completed: false,
+  })
 
   useEffect(() => {
     if (!user) return
@@ -71,11 +121,11 @@ function Calendar() {
           extendedProps: {
             type: 'event',
             originalId: eventItem.id,
-            title: eventItem.title,
-            date: eventItem.date,
-            time: eventItem.time,
-            location: eventItem.location,
-            description: eventItem.description,
+            title: eventItem.title || '',
+            date: eventItem.date || '',
+            time: eventItem.time || '',
+            location: eventItem.location || '',
+            description: eventItem.description || '',
           },
         }
       })
@@ -83,21 +133,25 @@ function Calendar() {
     const taskItems = tasks
       .filter((taskItem) => taskItem.dueDate)
       .map((taskItem) => {
+        const priority = taskItem.priority || 'media'
+
         return {
           id: `task-${taskItem.id}`,
           title: `Attività: ${taskItem.text}`,
           start: taskItem.dueDate,
           allDay: true,
           className: taskItem.completed
-            ? 'planify-calendar-task completed-calendar-task'
-            : 'planify-calendar-task',
+            ? `planify-calendar-task ${getPriorityClass(
+                priority
+              )} completed-calendar-task`
+            : `planify-calendar-task ${getPriorityClass(priority)}`,
           extendedProps: {
             type: 'task',
             originalId: taskItem.id,
-            text: taskItem.text,
-            dueDate: taskItem.dueDate,
-            priority: taskItem.priority,
-            completed: taskItem.completed,
+            text: taskItem.text || '',
+            dueDate: taskItem.dueDate || '',
+            priority,
+            completed: Boolean(taskItem.completed),
           },
         }
       })
@@ -108,25 +162,168 @@ function Calendar() {
   function handleCalendarItemClick(info) {
     const item = info.event.extendedProps
 
-    if (item.type === 'event') {
-      alert(
-        `Evento: ${item.title}\n` +
-          `Data: ${item.date}\n` +
-          `Ora: ${item.time || 'Non specificata'}\n` +
-          `Luogo: ${item.location || 'Non specificato'}\n` +
-          `Descrizione: ${item.description || 'Nessuna descrizione'}`
-      )
+    setSelectedItem(item)
+    setIsEditing(false)
+    setPopupError('')
+    setCalendarMessage('')
+    setCalendarError('')
 
-      return
+    if (item.type === 'event') {
+      setEventForm({
+        title: item.title || '',
+        date: item.date || '',
+        time: item.time || '',
+        location: item.location || '',
+        description: item.description || '',
+      })
     }
 
     if (item.type === 'task') {
-      alert(
-        `Attività: ${item.text}\n` +
-          `Scadenza: ${item.dueDate}\n` +
-          `Priorità: ${item.priority}\n` +
-          `Stato: ${item.completed ? 'Completata' : 'Da completare'}`
+      setTaskForm({
+        text: item.text || '',
+        dueDate: item.dueDate || '',
+        priority: item.priority || 'media',
+        completed: Boolean(item.completed),
+      })
+    }
+  }
+
+  async function handleCalendarItemDrop(info) {
+    const item = info.event.extendedProps
+    const newStartDate = info.event.start
+
+    if (!newStartDate) {
+      info.revert()
+      setCalendarError('Spostamento non valido.')
+      return
+    }
+
+    const newDate = formatDate(newStartDate)
+
+    try {
+      setCalendarMessage('')
+      setCalendarError('')
+
+      if (item.type === 'event') {
+        const eventRef = doc(db, 'users', user.uid, 'events', item.originalId)
+
+        const updatedEvent = {
+          date: newDate,
+        }
+
+        if (!info.event.allDay && item.time) {
+          updatedEvent.time = formatTime(newStartDate)
+        }
+
+        await updateDoc(eventRef, updatedEvent)
+
+        setCalendarMessage('Evento spostato correttamente.')
+        return
+      }
+
+      if (item.type === 'task') {
+        const taskRef = doc(db, 'users', user.uid, 'tasks', item.originalId)
+
+        await updateDoc(taskRef, {
+          dueDate: newDate,
+        })
+
+        setCalendarMessage('Attività spostata correttamente.')
+      }
+    } catch (error) {
+      console.error(error)
+      info.revert()
+      setCalendarError('Non è stato possibile salvare lo spostamento.')
+    }
+  }
+
+  function closePopup() {
+    setSelectedItem(null)
+    setIsEditing(false)
+    setPopupError('')
+  }
+
+  async function handleUpdateEvent(event) {
+    event.preventDefault()
+
+    if (!eventForm.title || !eventForm.date) {
+      setPopupError('Inserisci almeno titolo e data.')
+      return
+    }
+
+    const eventRef = doc(
+      db,
+      'users',
+      user.uid,
+      'events',
+      selectedItem.originalId
+    )
+
+    await updateDoc(eventRef, {
+      title: eventForm.title,
+      date: eventForm.date,
+      time: eventForm.time,
+      location: eventForm.location,
+      description: eventForm.description,
+    })
+
+    closePopup()
+  }
+
+  async function handleUpdateTask(event) {
+    event.preventDefault()
+
+    if (!taskForm.text || !taskForm.dueDate) {
+      setPopupError('Inserisci almeno nome attività e scadenza.')
+      return
+    }
+
+    const taskRef = doc(
+      db,
+      'users',
+      user.uid,
+      'tasks',
+      selectedItem.originalId
+    )
+
+    await updateDoc(taskRef, {
+      text: taskForm.text,
+      dueDate: taskForm.dueDate,
+      priority: taskForm.priority,
+      completed: taskForm.completed,
+    })
+
+    closePopup()
+  }
+
+  async function handleDeleteSelectedItem() {
+    if (!selectedItem) return
+
+    if (selectedItem.type === 'event') {
+      const eventRef = doc(
+        db,
+        'users',
+        user.uid,
+        'events',
+        selectedItem.originalId
       )
+
+      await deleteDoc(eventRef)
+      closePopup()
+      return
+    }
+
+    if (selectedItem.type === 'task') {
+      const taskRef = doc(
+        db,
+        'users',
+        user.uid,
+        'tasks',
+        selectedItem.originalId
+      )
+
+      await deleteDoc(taskRef)
+      closePopup()
     }
   }
 
@@ -147,6 +344,16 @@ function Calendar() {
           </Link>
         </div>
 
+        {calendarMessage && (
+          <p className="calendar-feedback success-feedback">
+            {calendarMessage}
+          </p>
+        )}
+
+        {calendarError && (
+          <p className="calendar-feedback error-feedback">{calendarError}</p>
+        )}
+
         <div className="fullcalendar-card">
           <FullCalendar
             plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
@@ -156,6 +363,10 @@ function Calendar() {
             height="auto"
             events={calendarItems}
             eventClick={handleCalendarItemClick}
+            eventDrop={handleCalendarItemDrop}
+            editable={true}
+            eventStartEditable={true}
+            eventDurationEditable={false}
             nowIndicator={true}
             dayMaxEvents={3}
             allDayText="Giornata"
@@ -173,18 +384,356 @@ function Calendar() {
           />
         </div>
 
-        <div className="calendar-legend">
-          <span>
-            <strong className="legend-dot event-dot"></strong>
-            Eventi
-          </span>
+        <div className="calendar-legend improved-calendar-legend">
+          <div className="legend-group">
+            <span className="legend-title">Tipologia</span>
 
-          <span>
-            <strong className="legend-dot task-dot"></strong>
-            Attività
-          </span>
+            <span className="legend-pill event-legend-pill">
+              <strong className="legend-dot event-dot"></strong>
+              Evento
+            </span>
+          </div>
+
+          <div className="legend-divider"></div>
+
+          <div className="legend-group">
+            <span className="legend-title">Priorità attività</span>
+
+            <span className="legend-pill low-legend-pill">
+              <strong className="legend-dot priority-low-dot"></strong>
+              Bassa
+            </span>
+
+            <span className="legend-pill medium-legend-pill">
+              <strong className="legend-dot priority-medium-dot"></strong>
+              Media
+            </span>
+
+            <span className="legend-pill high-legend-pill">
+              <strong className="legend-dot priority-high-dot"></strong>
+              Alta
+            </span>
+          </div>
         </div>
       </section>
+
+      {selectedItem && (
+        <div className="calendar-popup-overlay" onClick={closePopup}>
+          <div
+            className="calendar-popup"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="calendar-popup-header">
+              <div>
+                <span
+                  className={
+                    selectedItem.type === 'task'
+                      ? `calendar-popup-badge ${getPriorityClass(
+                          taskForm.priority
+                        )}`
+                      : 'calendar-popup-badge'
+                  }
+                >
+                  {selectedItem.type === 'event'
+                    ? 'Evento'
+                    : `Attività · Priorità ${getPriorityLabel(
+                        taskForm.priority
+                      )}`}
+                </span>
+
+                <h2>
+                  {selectedItem.type === 'event'
+                    ? eventForm.title
+                    : taskForm.text}
+                </h2>
+              </div>
+
+              <button className="popup-close-button" onClick={closePopup}>
+                ×
+              </button>
+            </div>
+
+            {!isEditing && selectedItem.type === 'event' && (
+              <>
+                <div className="calendar-popup-content">
+                  <p>
+                    <strong>Data:</strong> {eventForm.date}
+                  </p>
+
+                  <p>
+                    <strong>Ora:</strong>{' '}
+                    {eventForm.time || 'Non specificata'}
+                  </p>
+
+                  <p>
+                    <strong>Luogo:</strong>{' '}
+                    {eventForm.location || 'Non specificato'}
+                  </p>
+
+                  <p>
+                    <strong>Descrizione:</strong>{' '}
+                    {eventForm.description || 'Nessuna descrizione'}
+                  </p>
+                </div>
+
+                <div className="calendar-popup-actions">
+                  <button
+                    type="button"
+                    className="btn btn-danger"
+                    onClick={handleDeleteSelectedItem}
+                  >
+                    Elimina
+                  </button>
+
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={closePopup}
+                  >
+                    Chiudi
+                  </button>
+
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    onClick={() => setIsEditing(true)}
+                  >
+                    Modifica
+                  </button>
+                </div>
+              </>
+            )}
+
+            {!isEditing && selectedItem.type === 'task' && (
+              <>
+                <div className="calendar-popup-content">
+                  <p>
+                    <strong>Scadenza:</strong> {taskForm.dueDate}
+                  </p>
+
+                  <p>
+                    <strong>Priorità:</strong>{' '}
+                    <span
+                      className={`priority-text ${getPriorityClass(
+                        taskForm.priority
+                      )}`}
+                    >
+                      {getPriorityLabel(taskForm.priority)}
+                    </span>
+                  </p>
+
+                  <p>
+                    <strong>Stato:</strong>{' '}
+                    {taskForm.completed ? 'Completata' : 'Da completare'}
+                  </p>
+                </div>
+
+                <div className="calendar-popup-actions">
+                  <button
+                    type="button"
+                    className="btn btn-danger"
+                    onClick={handleDeleteSelectedItem}
+                  >
+                    Elimina
+                  </button>
+
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={closePopup}
+                  >
+                    Chiudi
+                  </button>
+
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    onClick={() => setIsEditing(true)}
+                  >
+                    Modifica
+                  </button>
+                </div>
+              </>
+            )}
+
+            {isEditing && selectedItem.type === 'event' && (
+              <form className="calendar-popup-form" onSubmit={handleUpdateEvent}>
+                <label>
+                  Titolo
+                  <input
+                    type="text"
+                    value={eventForm.title}
+                    onChange={(event) =>
+                      setEventForm({
+                        ...eventForm,
+                        title: event.target.value,
+                      })
+                    }
+                  />
+                </label>
+
+                <label>
+                  Data
+                  <input
+                    type="date"
+                    value={eventForm.date}
+                    onChange={(event) =>
+                      setEventForm({
+                        ...eventForm,
+                        date: event.target.value,
+                      })
+                    }
+                  />
+                </label>
+
+                <label>
+                  Ora
+                  <input
+                    type="time"
+                    value={eventForm.time}
+                    onChange={(event) =>
+                      setEventForm({
+                        ...eventForm,
+                        time: event.target.value,
+                      })
+                    }
+                  />
+                </label>
+
+                <label>
+                  Luogo
+                  <input
+                    type="text"
+                    value={eventForm.location}
+                    onChange={(event) =>
+                      setEventForm({
+                        ...eventForm,
+                        location: event.target.value,
+                      })
+                    }
+                  />
+                </label>
+
+                <label>
+                  Descrizione
+                  <textarea
+                    value={eventForm.description}
+                    onChange={(event) =>
+                      setEventForm({
+                        ...eventForm,
+                        description: event.target.value,
+                      })
+                    }
+                  />
+                </label>
+
+                {popupError && <p className="error-message">{popupError}</p>}
+
+                <div className="calendar-popup-actions">
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={() => {
+                      setIsEditing(false)
+                      setPopupError('')
+                    }}
+                  >
+                    Indietro
+                  </button>
+
+                  <button type="submit" className="btn btn-primary">
+                    Salva modifiche
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {isEditing && selectedItem.type === 'task' && (
+              <form className="calendar-popup-form" onSubmit={handleUpdateTask}>
+                <label>
+                  Attività
+                  <input
+                    type="text"
+                    value={taskForm.text}
+                    onChange={(event) =>
+                      setTaskForm({
+                        ...taskForm,
+                        text: event.target.value,
+                      })
+                    }
+                  />
+                </label>
+
+                <label>
+                  Scadenza
+                  <input
+                    type="date"
+                    value={taskForm.dueDate}
+                    onChange={(event) =>
+                      setTaskForm({
+                        ...taskForm,
+                        dueDate: event.target.value,
+                      })
+                    }
+                  />
+                </label>
+
+                <label>
+                  Priorità
+                  <select
+                    value={taskForm.priority}
+                    onChange={(event) =>
+                      setTaskForm({
+                        ...taskForm,
+                        priority: event.target.value,
+                      })
+                    }
+                  >
+                    <option value="bassa">Bassa</option>
+                    <option value="media">Media</option>
+                    <option value="alta">Alta</option>
+                  </select>
+                </label>
+
+                <label>
+                  Stato
+                  <select
+                    value={taskForm.completed ? 'completed' : 'open'}
+                    onChange={(event) =>
+                      setTaskForm({
+                        ...taskForm,
+                        completed: event.target.value === 'completed',
+                      })
+                    }
+                  >
+                    <option value="open">Da completare</option>
+                    <option value="completed">Completata</option>
+                  </select>
+                </label>
+
+                {popupError && <p className="error-message">{popupError}</p>}
+
+                <div className="calendar-popup-actions">
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={() => {
+                      setIsEditing(false)
+                      setPopupError('')
+                    }}
+                  >
+                    Indietro
+                  </button>
+
+                  <button type="submit" className="btn btn-primary">
+                    Salva modifiche
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
     </main>
   )
 }
