@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router'
 import {
+  addDoc,
   collection,
   deleteDoc,
   doc,
   onSnapshot,
   orderBy,
   query,
+  serverTimestamp,
   updateDoc,
 } from 'firebase/firestore'
 
@@ -51,8 +53,13 @@ function Calendar() {
 
   const [events, setEvents] = useState([])
   const [tasks, setTasks] = useState([])
+
   const [selectedItem, setSelectedItem] = useState(null)
   const [isEditing, setIsEditing] = useState(false)
+
+  const [isCreating, setIsCreating] = useState(false)
+  const [createType, setCreateType] = useState('event')
+
   const [popupError, setPopupError] = useState('')
   const [calendarMessage, setCalendarMessage] = useState('')
   const [calendarError, setCalendarError] = useState('')
@@ -163,6 +170,7 @@ function Calendar() {
     const item = info.event.extendedProps
 
     setSelectedItem(item)
+    setIsCreating(false)
     setIsEditing(false)
     setPopupError('')
     setCalendarMessage('')
@@ -186,6 +194,31 @@ function Calendar() {
         completed: Boolean(item.completed),
       })
     }
+  }
+
+  function handleDateClick(info) {
+    setSelectedItem(null)
+    setIsEditing(false)
+    setIsCreating(true)
+    setCreateType('event')
+    setPopupError('')
+    setCalendarMessage('')
+    setCalendarError('')
+
+    setEventForm({
+      title: '',
+      date: info.dateStr,
+      time: '',
+      location: '',
+      description: '',
+    })
+
+    setTaskForm({
+      text: '',
+      dueDate: info.dateStr,
+      priority: 'media',
+      completed: false,
+    })
   }
 
   async function handleCalendarItemDrop(info) {
@@ -240,7 +273,53 @@ function Calendar() {
   function closePopup() {
     setSelectedItem(null)
     setIsEditing(false)
+    setIsCreating(false)
     setPopupError('')
+  }
+
+  async function handleCreateEvent(event) {
+    event.preventDefault()
+
+    if (!eventForm.title || !eventForm.date) {
+      setPopupError('Inserisci almeno titolo e data.')
+      return
+    }
+
+    const eventsRef = collection(db, 'users', user.uid, 'events')
+
+    await addDoc(eventsRef, {
+      title: eventForm.title,
+      date: eventForm.date,
+      time: eventForm.time,
+      location: eventForm.location,
+      description: eventForm.description,
+      createdAt: serverTimestamp(),
+    })
+
+    setCalendarMessage('Evento creato correttamente.')
+    closePopup()
+  }
+
+  async function handleCreateTask(event) {
+    event.preventDefault()
+
+    if (!taskForm.text || !taskForm.dueDate) {
+      setPopupError('Inserisci almeno nome attività e scadenza.')
+      return
+    }
+
+    const tasksRef = collection(db, 'users', user.uid, 'tasks')
+
+    await addDoc(tasksRef, {
+      text: taskForm.text,
+      dueDate: taskForm.dueDate,
+      priority: taskForm.priority,
+      completed: taskForm.completed,
+      createdAt: serverTimestamp(),
+    })
+
+    setCalendarMessage('Attività creata correttamente.')
+    closePopup()
   }
 
   async function handleUpdateEvent(event) {
@@ -363,6 +442,7 @@ function Calendar() {
             height="auto"
             events={calendarItems}
             eventClick={handleCalendarItemClick}
+            dateClick={handleDateClick}
             eventDrop={handleCalendarItemDrop}
             editable={true}
             eventStartEditable={true}
@@ -417,319 +497,541 @@ function Calendar() {
         </div>
       </section>
 
-      {selectedItem && (
+      {(selectedItem || isCreating) && (
         <div className="calendar-popup-overlay" onClick={closePopup}>
           <div
             className="calendar-popup"
             onClick={(event) => event.stopPropagation()}
           >
-            <div className="calendar-popup-header">
-              <div>
-                <span
-                  className={
-                    selectedItem.type === 'task'
-                      ? `calendar-popup-badge ${getPriorityClass(
-                          taskForm.priority
-                        )}`
-                      : 'calendar-popup-badge'
-                  }
-                >
-                  {selectedItem.type === 'event'
-                    ? 'Evento'
-                    : `Attività · Priorità ${getPriorityLabel(
-                        taskForm.priority
-                      )}`}
-                </span>
-
-                <h2>
-                  {selectedItem.type === 'event'
-                    ? eventForm.title
-                    : taskForm.text}
-                </h2>
-              </div>
-
-              <button className="popup-close-button" onClick={closePopup}>
-                ×
-              </button>
-            </div>
-
-            {!isEditing && selectedItem.type === 'event' && (
+            {isCreating ? (
               <>
-                <div className="calendar-popup-content">
-                  <p>
-                    <strong>Data:</strong> {eventForm.date}
-                  </p>
-
-                  <p>
-                    <strong>Ora:</strong>{' '}
-                    {eventForm.time || 'Non specificata'}
-                  </p>
-
-                  <p>
-                    <strong>Luogo:</strong>{' '}
-                    {eventForm.location || 'Non specificato'}
-                  </p>
-
-                  <p>
-                    <strong>Descrizione:</strong>{' '}
-                    {eventForm.description || 'Nessuna descrizione'}
-                  </p>
-                </div>
-
-                <div className="calendar-popup-actions">
-                  <button
-                    type="button"
-                    className="btn btn-danger"
-                    onClick={handleDeleteSelectedItem}
-                  >
-                    Elimina
-                  </button>
-
-                  <button
-                    type="button"
-                    className="btn btn-secondary"
-                    onClick={closePopup}
-                  >
-                    Chiudi
-                  </button>
-
-                  <button
-                    type="button"
-                    className="btn btn-primary"
-                    onClick={() => setIsEditing(true)}
-                  >
-                    Modifica
-                  </button>
-                </div>
-              </>
-            )}
-
-            {!isEditing && selectedItem.type === 'task' && (
-              <>
-                <div className="calendar-popup-content">
-                  <p>
-                    <strong>Scadenza:</strong> {taskForm.dueDate}
-                  </p>
-
-                  <p>
-                    <strong>Priorità:</strong>{' '}
-                    <span
-                      className={`priority-text ${getPriorityClass(
-                        taskForm.priority
-                      )}`}
-                    >
-                      {getPriorityLabel(taskForm.priority)}
+                <div className="calendar-popup-header">
+                  <div>
+                    <span className="calendar-popup-badge">
+                      Nuovo elemento
                     </span>
-                  </p>
 
-                  <p>
-                    <strong>Stato:</strong>{' '}
-                    {taskForm.completed ? 'Completata' : 'Da completare'}
-                  </p>
-                </div>
+                    <h2>
+                      {createType === 'event'
+                        ? 'Crea nuovo evento'
+                        : 'Crea nuova attività'}
+                    </h2>
+                  </div>
 
-                <div className="calendar-popup-actions">
-                  <button
-                    type="button"
-                    className="btn btn-danger"
-                    onClick={handleDeleteSelectedItem}
-                  >
-                    Elimina
-                  </button>
-
-                  <button
-                    type="button"
-                    className="btn btn-secondary"
-                    onClick={closePopup}
-                  >
-                    Chiudi
-                  </button>
-
-                  <button
-                    type="button"
-                    className="btn btn-primary"
-                    onClick={() => setIsEditing(true)}
-                  >
-                    Modifica
+                  <button className="popup-close-button" onClick={closePopup}>
+                    ×
                   </button>
                 </div>
+
+                <div className="create-type-switch">
+                  <button
+                    type="button"
+                    className={
+                      createType === 'event'
+                        ? 'create-type-button active'
+                        : 'create-type-button'
+                    }
+                    onClick={() => setCreateType('event')}
+                  >
+                    Evento
+                  </button>
+
+                  <button
+                    type="button"
+                    className={
+                      createType === 'task'
+                        ? 'create-type-button active'
+                        : 'create-type-button'
+                    }
+                    onClick={() => setCreateType('task')}
+                  >
+                    Attività
+                  </button>
+                </div>
+
+                {createType === 'event' ? (
+                  <form
+                    className="calendar-popup-form"
+                    onSubmit={handleCreateEvent}
+                  >
+                    <label>
+                      Titolo
+                      <input
+                        type="text"
+                        value={eventForm.title}
+                        onChange={(event) =>
+                          setEventForm({
+                            ...eventForm,
+                            title: event.target.value,
+                          })
+                        }
+                      />
+                    </label>
+
+                    <label>
+                      Data
+                      <input
+                        type="date"
+                        value={eventForm.date}
+                        onChange={(event) =>
+                          setEventForm({
+                            ...eventForm,
+                            date: event.target.value,
+                          })
+                        }
+                      />
+                    </label>
+
+                    <label>
+                      Ora
+                      <input
+                        type="time"
+                        value={eventForm.time}
+                        onChange={(event) =>
+                          setEventForm({
+                            ...eventForm,
+                            time: event.target.value,
+                          })
+                        }
+                      />
+                    </label>
+
+                    <label>
+                      Luogo
+                      <input
+                        type="text"
+                        value={eventForm.location}
+                        onChange={(event) =>
+                          setEventForm({
+                            ...eventForm,
+                            location: event.target.value,
+                          })
+                        }
+                      />
+                    </label>
+
+                    <label>
+                      Descrizione
+                      <textarea
+                        value={eventForm.description}
+                        onChange={(event) =>
+                          setEventForm({
+                            ...eventForm,
+                            description: event.target.value,
+                          })
+                        }
+                      />
+                    </label>
+
+                    {popupError && (
+                      <p className="error-message">{popupError}</p>
+                    )}
+
+                    <div className="calendar-popup-actions">
+                      <button
+                        type="button"
+                        className="btn btn-secondary"
+                        onClick={closePopup}
+                      >
+                        Annulla
+                      </button>
+
+                      <button type="submit" className="btn btn-primary">
+                        Crea evento
+                      </button>
+                    </div>
+                  </form>
+                ) : (
+                  <form
+                    className="calendar-popup-form"
+                    onSubmit={handleCreateTask}
+                  >
+                    <label>
+                      Attività
+                      <input
+                        type="text"
+                        value={taskForm.text}
+                        onChange={(event) =>
+                          setTaskForm({
+                            ...taskForm,
+                            text: event.target.value,
+                          })
+                        }
+                      />
+                    </label>
+
+                    <label>
+                      Scadenza
+                      <input
+                        type="date"
+                        value={taskForm.dueDate}
+                        onChange={(event) =>
+                          setTaskForm({
+                            ...taskForm,
+                            dueDate: event.target.value,
+                          })
+                        }
+                      />
+                    </label>
+
+                    <label>
+                      Priorità
+                      <select
+                        value={taskForm.priority}
+                        onChange={(event) =>
+                          setTaskForm({
+                            ...taskForm,
+                            priority: event.target.value,
+                          })
+                        }
+                      >
+                        <option value="bassa">Bassa</option>
+                        <option value="media">Media</option>
+                        <option value="alta">Alta</option>
+                      </select>
+                    </label>
+
+                    {popupError && (
+                      <p className="error-message">{popupError}</p>
+                    )}
+
+                    <div className="calendar-popup-actions">
+                      <button
+                        type="button"
+                        className="btn btn-secondary"
+                        onClick={closePopup}
+                      >
+                        Annulla
+                      </button>
+
+                      <button type="submit" className="btn btn-primary">
+                        Crea attività
+                      </button>
+                    </div>
+                  </form>
+                )}
               </>
-            )}
+            ) : (
+              <>
+                <div className="calendar-popup-header">
+                  <div>
+                    <span
+                      className={
+                        selectedItem.type === 'task'
+                          ? `calendar-popup-badge ${getPriorityClass(
+                              taskForm.priority
+                            )}`
+                          : 'calendar-popup-badge'
+                      }
+                    >
+                      {selectedItem.type === 'event'
+                        ? 'Evento'
+                        : `Attività · Priorità ${getPriorityLabel(
+                            taskForm.priority
+                          )}`}
+                    </span>
 
-            {isEditing && selectedItem.type === 'event' && (
-              <form className="calendar-popup-form" onSubmit={handleUpdateEvent}>
-                <label>
-                  Titolo
-                  <input
-                    type="text"
-                    value={eventForm.title}
-                    onChange={(event) =>
-                      setEventForm({
-                        ...eventForm,
-                        title: event.target.value,
-                      })
-                    }
-                  />
-                </label>
+                    <h2>
+                      {selectedItem.type === 'event'
+                        ? eventForm.title
+                        : taskForm.text}
+                    </h2>
+                  </div>
 
-                <label>
-                  Data
-                  <input
-                    type="date"
-                    value={eventForm.date}
-                    onChange={(event) =>
-                      setEventForm({
-                        ...eventForm,
-                        date: event.target.value,
-                      })
-                    }
-                  />
-                </label>
-
-                <label>
-                  Ora
-                  <input
-                    type="time"
-                    value={eventForm.time}
-                    onChange={(event) =>
-                      setEventForm({
-                        ...eventForm,
-                        time: event.target.value,
-                      })
-                    }
-                  />
-                </label>
-
-                <label>
-                  Luogo
-                  <input
-                    type="text"
-                    value={eventForm.location}
-                    onChange={(event) =>
-                      setEventForm({
-                        ...eventForm,
-                        location: event.target.value,
-                      })
-                    }
-                  />
-                </label>
-
-                <label>
-                  Descrizione
-                  <textarea
-                    value={eventForm.description}
-                    onChange={(event) =>
-                      setEventForm({
-                        ...eventForm,
-                        description: event.target.value,
-                      })
-                    }
-                  />
-                </label>
-
-                {popupError && <p className="error-message">{popupError}</p>}
-
-                <div className="calendar-popup-actions">
-                  <button
-                    type="button"
-                    className="btn btn-secondary"
-                    onClick={() => {
-                      setIsEditing(false)
-                      setPopupError('')
-                    }}
-                  >
-                    Indietro
-                  </button>
-
-                  <button type="submit" className="btn btn-primary">
-                    Salva modifiche
+                  <button className="popup-close-button" onClick={closePopup}>
+                    ×
                   </button>
                 </div>
-              </form>
-            )}
 
-            {isEditing && selectedItem.type === 'task' && (
-              <form className="calendar-popup-form" onSubmit={handleUpdateTask}>
-                <label>
-                  Attività
-                  <input
-                    type="text"
-                    value={taskForm.text}
-                    onChange={(event) =>
-                      setTaskForm({
-                        ...taskForm,
-                        text: event.target.value,
-                      })
-                    }
-                  />
-                </label>
+                {!isEditing && selectedItem.type === 'event' && (
+                  <>
+                    <div className="calendar-popup-content">
+                      <p>
+                        <strong>Data:</strong> {eventForm.date}
+                      </p>
 
-                <label>
-                  Scadenza
-                  <input
-                    type="date"
-                    value={taskForm.dueDate}
-                    onChange={(event) =>
-                      setTaskForm({
-                        ...taskForm,
-                        dueDate: event.target.value,
-                      })
-                    }
-                  />
-                </label>
+                      <p>
+                        <strong>Ora:</strong>{' '}
+                        {eventForm.time || 'Non specificata'}
+                      </p>
 
-                <label>
-                  Priorità
-                  <select
-                    value={taskForm.priority}
-                    onChange={(event) =>
-                      setTaskForm({
-                        ...taskForm,
-                        priority: event.target.value,
-                      })
-                    }
+                      <p>
+                        <strong>Luogo:</strong>{' '}
+                        {eventForm.location || 'Non specificato'}
+                      </p>
+
+                      <p>
+                        <strong>Descrizione:</strong>{' '}
+                        {eventForm.description || 'Nessuna descrizione'}
+                      </p>
+                    </div>
+
+                    <div className="calendar-popup-actions">
+                      <button
+                        type="button"
+                        className="btn btn-danger"
+                        onClick={handleDeleteSelectedItem}
+                      >
+                        Elimina
+                      </button>
+
+                      <button
+                        type="button"
+                        className="btn btn-secondary"
+                        onClick={closePopup}
+                      >
+                        Chiudi
+                      </button>
+
+                      <button
+                        type="button"
+                        className="btn btn-primary"
+                        onClick={() => setIsEditing(true)}
+                      >
+                        Modifica
+                      </button>
+                    </div>
+                  </>
+                )}
+
+                {!isEditing && selectedItem.type === 'task' && (
+                  <>
+                    <div className="calendar-popup-content">
+                      <p>
+                        <strong>Scadenza:</strong> {taskForm.dueDate}
+                      </p>
+
+                      <p>
+                        <strong>Priorità:</strong>{' '}
+                        <span
+                          className={`priority-text ${getPriorityClass(
+                            taskForm.priority
+                          )}`}
+                        >
+                          {getPriorityLabel(taskForm.priority)}
+                        </span>
+                      </p>
+
+                      <p>
+                        <strong>Stato:</strong>{' '}
+                        {taskForm.completed ? 'Completata' : 'Da completare'}
+                      </p>
+                    </div>
+
+                    <div className="calendar-popup-actions">
+                      <button
+                        type="button"
+                        className="btn btn-danger"
+                        onClick={handleDeleteSelectedItem}
+                      >
+                        Elimina
+                      </button>
+
+                      <button
+                        type="button"
+                        className="btn btn-secondary"
+                        onClick={closePopup}
+                      >
+                        Chiudi
+                      </button>
+
+                      <button
+                        type="button"
+                        className="btn btn-primary"
+                        onClick={() => setIsEditing(true)}
+                      >
+                        Modifica
+                      </button>
+                    </div>
+                  </>
+                )}
+
+                {isEditing && selectedItem.type === 'event' && (
+                  <form
+                    className="calendar-popup-form"
+                    onSubmit={handleUpdateEvent}
                   >
-                    <option value="bassa">Bassa</option>
-                    <option value="media">Media</option>
-                    <option value="alta">Alta</option>
-                  </select>
-                </label>
+                    <label>
+                      Titolo
+                      <input
+                        type="text"
+                        value={eventForm.title}
+                        onChange={(event) =>
+                          setEventForm({
+                            ...eventForm,
+                            title: event.target.value,
+                          })
+                        }
+                      />
+                    </label>
 
-                <label>
-                  Stato
-                  <select
-                    value={taskForm.completed ? 'completed' : 'open'}
-                    onChange={(event) =>
-                      setTaskForm({
-                        ...taskForm,
-                        completed: event.target.value === 'completed',
-                      })
-                    }
+                    <label>
+                      Data
+                      <input
+                        type="date"
+                        value={eventForm.date}
+                        onChange={(event) =>
+                          setEventForm({
+                            ...eventForm,
+                            date: event.target.value,
+                          })
+                        }
+                      />
+                    </label>
+
+                    <label>
+                      Ora
+                      <input
+                        type="time"
+                        value={eventForm.time}
+                        onChange={(event) =>
+                          setEventForm({
+                            ...eventForm,
+                            time: event.target.value,
+                          })
+                        }
+                      />
+                    </label>
+
+                    <label>
+                      Luogo
+                      <input
+                        type="text"
+                        value={eventForm.location}
+                        onChange={(event) =>
+                          setEventForm({
+                            ...eventForm,
+                            location: event.target.value,
+                          })
+                        }
+                      />
+                    </label>
+
+                    <label>
+                      Descrizione
+                      <textarea
+                        value={eventForm.description}
+                        onChange={(event) =>
+                          setEventForm({
+                            ...eventForm,
+                            description: event.target.value,
+                          })
+                        }
+                      />
+                    </label>
+
+                    {popupError && (
+                      <p className="error-message">{popupError}</p>
+                    )}
+
+                    <div className="calendar-popup-actions">
+                      <button
+                        type="button"
+                        className="btn btn-secondary"
+                        onClick={() => {
+                          setIsEditing(false)
+                          setPopupError('')
+                        }}
+                      >
+                        Indietro
+                      </button>
+
+                      <button type="submit" className="btn btn-primary">
+                        Salva modifiche
+                      </button>
+                    </div>
+                  </form>
+                )}
+
+                {isEditing && selectedItem.type === 'task' && (
+                  <form
+                    className="calendar-popup-form"
+                    onSubmit={handleUpdateTask}
                   >
-                    <option value="open">Da completare</option>
-                    <option value="completed">Completata</option>
-                  </select>
-                </label>
+                    <label>
+                      Attività
+                      <input
+                        type="text"
+                        value={taskForm.text}
+                        onChange={(event) =>
+                          setTaskForm({
+                            ...taskForm,
+                            text: event.target.value,
+                          })
+                        }
+                      />
+                    </label>
 
-                {popupError && <p className="error-message">{popupError}</p>}
+                    <label>
+                      Scadenza
+                      <input
+                        type="date"
+                        value={taskForm.dueDate}
+                        onChange={(event) =>
+                          setTaskForm({
+                            ...taskForm,
+                            dueDate: event.target.value,
+                          })
+                        }
+                      />
+                    </label>
 
-                <div className="calendar-popup-actions">
-                  <button
-                    type="button"
-                    className="btn btn-secondary"
-                    onClick={() => {
-                      setIsEditing(false)
-                      setPopupError('')
-                    }}
-                  >
-                    Indietro
-                  </button>
+                    <label>
+                      Priorità
+                      <select
+                        value={taskForm.priority}
+                        onChange={(event) =>
+                          setTaskForm({
+                            ...taskForm,
+                            priority: event.target.value,
+                          })
+                        }
+                      >
+                        <option value="bassa">Bassa</option>
+                        <option value="media">Media</option>
+                        <option value="alta">Alta</option>
+                      </select>
+                    </label>
 
-                  <button type="submit" className="btn btn-primary">
-                    Salva modifiche
-                  </button>
-                </div>
-              </form>
+                    <label>
+                      Stato
+                      <select
+                        value={taskForm.completed ? 'completed' : 'open'}
+                        onChange={(event) =>
+                          setTaskForm({
+                            ...taskForm,
+                            completed: event.target.value === 'completed',
+                          })
+                        }
+                      >
+                        <option value="open">Da completare</option>
+                        <option value="completed">Completata</option>
+                      </select>
+                    </label>
+
+                    {popupError && (
+                      <p className="error-message">{popupError}</p>
+                    )}
+
+                    <div className="calendar-popup-actions">
+                      <button
+                        type="button"
+                        className="btn btn-secondary"
+                        onClick={() => {
+                          setIsEditing(false)
+                          setPopupError('')
+                        }}
+                      >
+                        Indietro
+                      </button>
+
+                      <button type="submit" className="btn btn-primary">
+                        Salva modifiche
+                      </button>
+                    </div>
+                  </form>
+                )}
+              </>
             )}
           </div>
         </div>

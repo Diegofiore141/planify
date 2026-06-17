@@ -1630,3 +1630,32 @@ button {
   color: #dc2626;
   border: 1px solid #fecaca;
 }
+.create-type-switch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 18px;
+  padding: 6px;
+  border-radius: 16px;
+  background: #f1f5f9;
+}
+
+.create-type-button {
+  border: 0;
+  padding: 11px 14px;
+  border-radius: 12px;
+  background: transparent;
+  color: #64748b;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.create-type-button.active {
+  background: white;
+  color: #2563eb;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.08);
+}
+
+.create-type-button:hover {
+  color: #1d4ed8;
+}
