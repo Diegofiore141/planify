@@ -6,53 +6,21 @@ import {
   orderBy,
   query,
 } from 'firebase/firestore'
+
+import FullCalendar from '@fullcalendar/react'
+import dayGridPlugin from '@fullcalendar/daygrid'
+import timeGridPlugin from '@fullcalendar/timegrid'
+import interactionPlugin from '@fullcalendar/interaction'
+import itLocale from '@fullcalendar/core/locales/it'
+
 import { db } from '../services/firebase'
 import { useAuth } from '../context/AuthContext'
-
-const weekDays = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom']
-
-function formatDateKey(year, month, day) {
-  const formattedMonth = String(month + 1).padStart(2, '0')
-  const formattedDay = String(day).padStart(2, '0')
-
-  return `${year}-${formattedMonth}-${formattedDay}`
-}
-
-function getCalendarDays(currentDate) {
-  const year = currentDate.getFullYear()
-  const month = currentDate.getMonth()
-
-  const firstDayOfMonth = new Date(year, month, 1)
-  const daysInMonth = new Date(year, month + 1, 0).getDate()
-
-  const startDay = (firstDayOfMonth.getDay() + 6) % 7
-
-  const days = []
-
-  for (let i = 0; i < startDay; i++) {
-    days.push(null)
-  }
-
-  for (let day = 1; day <= daysInMonth; day++) {
-    days.push({
-      day,
-      dateKey: formatDateKey(year, month, day),
-    })
-  }
-
-  while (days.length % 7 !== 0) {
-    days.push(null)
-  }
-
-  return days
-}
 
 function Calendar() {
   const { user } = useAuth()
 
   const [events, setEvents] = useState([])
   const [tasks, setTasks] = useState([])
-  const [currentDate, setCurrentDate] = useState(new Date())
 
   useEffect(() => {
     if (!user) return
@@ -86,45 +54,80 @@ function Calendar() {
     }
   }, [user])
 
-  const calendarDays = useMemo(() => {
-    return getCalendarDays(currentDate)
-  }, [currentDate])
+  const calendarItems = useMemo(() => {
+    const eventItems = events
+      .filter((eventItem) => eventItem.date)
+      .map((eventItem) => {
+        const hasTime = Boolean(eventItem.time)
 
-  const monthTitle = currentDate.toLocaleDateString('it-IT', {
-    month: 'long',
-    year: 'numeric',
-  })
+        return {
+          id: `event-${eventItem.id}`,
+          title: eventItem.title,
+          start: hasTime
+            ? `${eventItem.date}T${eventItem.time}`
+            : eventItem.date,
+          allDay: !hasTime,
+          className: 'planify-calendar-event',
+          extendedProps: {
+            type: 'event',
+            originalId: eventItem.id,
+            title: eventItem.title,
+            date: eventItem.date,
+            time: eventItem.time,
+            location: eventItem.location,
+            description: eventItem.description,
+          },
+        }
+      })
 
-  function goToPreviousMonth() {
-    setCurrentDate((previousDate) => {
-      return new Date(
-        previousDate.getFullYear(),
-        previousDate.getMonth() - 1,
-        1
+    const taskItems = tasks
+      .filter((taskItem) => taskItem.dueDate)
+      .map((taskItem) => {
+        return {
+          id: `task-${taskItem.id}`,
+          title: `Attività: ${taskItem.text}`,
+          start: taskItem.dueDate,
+          allDay: true,
+          className: taskItem.completed
+            ? 'planify-calendar-task completed-calendar-task'
+            : 'planify-calendar-task',
+          extendedProps: {
+            type: 'task',
+            originalId: taskItem.id,
+            text: taskItem.text,
+            dueDate: taskItem.dueDate,
+            priority: taskItem.priority,
+            completed: taskItem.completed,
+          },
+        }
+      })
+
+    return [...eventItems, ...taskItems]
+  }, [events, tasks])
+
+  function handleCalendarItemClick(info) {
+    const item = info.event.extendedProps
+
+    if (item.type === 'event') {
+      alert(
+        `Evento: ${item.title}\n` +
+          `Data: ${item.date}\n` +
+          `Ora: ${item.time || 'Non specificata'}\n` +
+          `Luogo: ${item.location || 'Non specificato'}\n` +
+          `Descrizione: ${item.description || 'Nessuna descrizione'}`
       )
-    })
-  }
 
-  function goToNextMonth() {
-    setCurrentDate((previousDate) => {
-      return new Date(
-        previousDate.getFullYear(),
-        previousDate.getMonth() + 1,
-        1
+      return
+    }
+
+    if (item.type === 'task') {
+      alert(
+        `Attività: ${item.text}\n` +
+          `Scadenza: ${item.dueDate}\n` +
+          `Priorità: ${item.priority}\n` +
+          `Stato: ${item.completed ? 'Completata' : 'Da completare'}`
       )
-    })
-  }
-
-  function goToToday() {
-    setCurrentDate(new Date())
-  }
-
-  function getEventsForDay(dateKey) {
-    return events.filter((event) => event.date === dateKey)
-  }
-
-  function getTasksForDay(dateKey) {
-    return tasks.filter((task) => task.dueDate === dateKey)
+    }
   }
 
   return (
@@ -134,8 +137,8 @@ function Calendar() {
           <div>
             <h1>Calendario</h1>
             <p>
-              Visualizza eventi e attività con scadenza in un’unica vista
-              mensile.
+              Visualizza eventi e attività con scadenza in un calendario
+              interattivo.
             </p>
           </div>
 
@@ -144,69 +147,29 @@ function Calendar() {
           </Link>
         </div>
 
-        <div className="calendar-toolbar">
-          <button className="btn btn-secondary" onClick={goToPreviousMonth}>
-            Mese precedente
-          </button>
-
-          <div>
-            <h2>{monthTitle}</h2>
-            <button className="calendar-today-button" onClick={goToToday}>
-              Torna a oggi
-            </button>
-          </div>
-
-          <button className="btn btn-secondary" onClick={goToNextMonth}>
-            Mese successivo
-          </button>
-        </div>
-
-        <div className="calendar-grid">
-          {weekDays.map((day) => (
-            <div className="calendar-weekday" key={day}>
-              {day}
-            </div>
-          ))}
-
-          {calendarDays.map((calendarDay, index) => {
-            if (!calendarDay) {
-              return <div className="calendar-day empty-day" key={index}></div>
-            }
-
-            const dayEvents = getEventsForDay(calendarDay.dateKey)
-            const dayTasks = getTasksForDay(calendarDay.dateKey)
-
-            return (
-              <div className="calendar-day" key={calendarDay.dateKey}>
-                <div className="calendar-day-number">
-                  {calendarDay.day}
-                </div>
-
-                <div className="calendar-items">
-                  {dayEvents.map((event) => (
-                    <div className="calendar-item event-item" key={event.id}>
-                      <strong>{event.title}</strong>
-                      {event.time && <span>{event.time}</span>}
-                    </div>
-                  ))}
-
-                  {dayTasks.map((task) => (
-                    <div
-                      className={
-                        task.completed
-                          ? 'calendar-item task-item-calendar completed-calendar-task'
-                          : 'calendar-item task-item-calendar'
-                      }
-                      key={task.id}
-                    >
-                      <strong>{task.text}</strong>
-                      <span>{task.priority}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )
-          })}
+        <div className="fullcalendar-card">
+          <FullCalendar
+            plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+            initialView="dayGridMonth"
+            locale={itLocale}
+            firstDay={1}
+            height="auto"
+            events={calendarItems}
+            eventClick={handleCalendarItemClick}
+            nowIndicator={true}
+            dayMaxEvents={3}
+            headerToolbar={{
+              left: 'prev,next today',
+              center: 'title',
+              right: 'dayGridMonth,timeGridWeek,timeGridDay',
+            }}
+            buttonText={{
+              today: 'Oggi',
+              month: 'Mese',
+              week: 'Settimana',
+              day: 'Giorno',
+            }}
+          />
         </div>
 
         <div className="calendar-legend">
