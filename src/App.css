@@ -728,3 +728,77 @@ button {
   line-height: 1.6;
   margin-bottom: 24px;
 }
+
+.notifications-card {
+  width: 100%;
+  max-width: 720px;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 34px;
+  border-radius: 24px;
+  box-shadow: 0 25px 70px rgba(15, 23, 42, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+}
+
+.notifications-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: flex-start;
+  margin-bottom: 28px;
+}
+
+.notifications-header h1 {
+  margin: 0 0 10px;
+  color: #0f172a;
+  font-size: 34px;
+}
+
+.notifications-header p {
+  margin: 0;
+  color: #64748b;
+  line-height: 1.6;
+}
+
+.notification-status,
+.notifications-info {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  padding: 20px;
+  border-radius: 18px;
+  margin-bottom: 18px;
+}
+
+.notification-status h2,
+.notifications-info h2 {
+  margin: 0 0 10px;
+  color: #0f172a;
+}
+
+.notification-status p,
+.notifications-info p {
+  margin: 0;
+  color: #64748b;
+  line-height: 1.6;
+}
+
+.notifications-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 22px 0;
+}
+
+.notification-message {
+  margin: 0 0 18px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-weight: 700;
+}
+
+@media (max-width: 700px) {
+  .notifications-header {
+    flex-direction: column;
+  }
+}
