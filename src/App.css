@@ -802,3 +802,20 @@ button {
     flex-direction: column;
   }
 }
+
+.reminder-box {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: #fefce8;
+  border: 1px solid #fde68a;
+}
+
+.reminder-box strong {
+  color: #a16207;
+}
+
+.reminder-box p {
+  margin: 6px 0 0;
+  color: #334155;
+}

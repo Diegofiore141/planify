@@ -35,3 +35,34 @@ export function showNotification(title, options = {}) {
     ...options,
   })
 }
+
+export function getEventDateTime(eventItem) {
+  if (!eventItem.date || !eventItem.time) {
+    throw new Error('Evento senza data o ora.')
+  }
+
+  return new Date(`${eventItem.date}T${eventItem.time}`)
+}
+
+export function getMillisecondsUntilEvent(eventItem) {
+  const eventDateTime = getEventDateTime(eventItem)
+  const now = new Date()
+
+  return eventDateTime.getTime() - now.getTime()
+}
+
+export function scheduleEventNotification(eventItem) {
+  const millisecondsUntilEvent = getMillisecondsUntilEvent(eventItem)
+
+  if (millisecondsUntilEvent <= 0) {
+    throw new Error('Questo evento è già passato.')
+  }
+
+  const timeoutId = window.setTimeout(() => {
+    showNotification('Promemoria Planify', {
+      body: `Hai un evento ora: ${eventItem.title}`,
+    })
+  }, millisecondsUntilEvent)
+
+  return timeoutId
+}

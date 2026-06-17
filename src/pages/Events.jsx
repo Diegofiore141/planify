@@ -14,6 +14,11 @@ import {
 import { db } from '../services/firebase'
 import { useAuth } from '../context/AuthContext'
 import { getWeatherForCity } from '../services/weather'
+import {
+  getNotificationPermission,
+  requestNotificationPermission,
+  scheduleEventNotification,
+} from '../services/notifications'
 
 function Events() {
   const { user } = useAuth()
@@ -31,6 +36,10 @@ function Events() {
   const [weatherByEvent, setWeatherByEvent] = useState({})
   const [weatherLoading, setWeatherLoading] = useState('')
   const [weatherError, setWeatherError] = useState('')
+
+  const [reminderByEvent, setReminderByEvent] = useState({})
+  const [scheduledReminders, setScheduledReminders] = useState({})
+  const [reminderError, setReminderError] = useState('')
 
   useEffect(() => {
     if (!user) return
@@ -60,6 +69,32 @@ function Events() {
     setError('')
   }
 
+  function clearEventWeather(eventId) {
+    setWeatherByEvent((previousWeather) => {
+      const updatedWeather = { ...previousWeather }
+      delete updatedWeather[eventId]
+      return updatedWeather
+    })
+  }
+
+  function clearEventReminder(eventId) {
+    if (scheduledReminders[eventId]) {
+      clearTimeout(scheduledReminders[eventId])
+    }
+
+    setScheduledReminders((previousReminders) => {
+      const updatedReminders = { ...previousReminders }
+      delete updatedReminders[eventId]
+      return updatedReminders
+    })
+
+    setReminderByEvent((previousMessages) => {
+      const updatedMessages = { ...previousMessages }
+      delete updatedMessages[eventId]
+      return updatedMessages
+    })
+  }
+
   async function handleSaveEvent(event) {
     event.preventDefault()
 
@@ -81,11 +116,8 @@ function Events() {
         description,
       })
 
-      setWeatherByEvent((previousWeather) => {
-        const updatedWeather = { ...previousWeather }
-        delete updatedWeather[editEventId]
-        return updatedWeather
-      })
+      clearEventWeather(editEventId)
+      clearEventReminder(editEventId)
 
       resetForm()
       return
@@ -114,17 +146,15 @@ function Events() {
     setDescription(eventItem.description || '')
     setError('')
     setWeatherError('')
+    setReminderError('')
   }
 
   async function handleDeleteEvent(eventId) {
     const eventRef = doc(db, 'users', user.uid, 'events', eventId)
     await deleteDoc(eventRef)
 
-    setWeatherByEvent((previousWeather) => {
-      const updatedWeather = { ...previousWeather }
-      delete updatedWeather[eventId]
-      return updatedWeather
-    })
+    clearEventWeather(eventId)
+    clearEventReminder(eventId)
 
     if (editEventId === eventId) {
       resetForm()
@@ -145,11 +175,7 @@ function Events() {
     setWeatherError('')
     setWeatherLoading(eventItem.id)
 
-    setWeatherByEvent((previousWeather) => {
-      const updatedWeather = { ...previousWeather }
-      delete updatedWeather[eventItem.id]
-      return updatedWeather
-    })
+    clearEventWeather(eventItem.id)
 
     try {
       const weather = await getWeatherForCity(
@@ -167,6 +193,51 @@ function Events() {
       setWeatherError('Meteo non disponibile per questo luogo, data o ora.')
     } finally {
       setWeatherLoading('')
+    }
+  }
+
+  async function handleScheduleReminder(eventItem) {
+    setReminderError('')
+
+    if (!eventItem.date || !eventItem.time) {
+      setReminderError('Inserisci data e ora per attivare il promemoria.')
+      return
+    }
+
+    try {
+      let permission = getNotificationPermission()
+
+      if (permission !== 'granted') {
+        permission = await requestNotificationPermission()
+      }
+
+      if (permission !== 'granted') {
+        setReminderError(
+          'Devi consentire le notifiche per attivare un promemoria.'
+        )
+        return
+      }
+
+      if (scheduledReminders[eventItem.id]) {
+        clearTimeout(scheduledReminders[eventItem.id])
+      }
+
+      const timeoutId = scheduleEventNotification(eventItem)
+
+      setScheduledReminders((previousReminders) => ({
+        ...previousReminders,
+        [eventItem.id]: timeoutId,
+      }))
+
+      setReminderByEvent((previousMessages) => ({
+        ...previousMessages,
+        [eventItem.id]: `Promemoria attivo per le ${eventItem.time}`,
+      }))
+    } catch (error) {
+      console.error(error)
+      setReminderError(
+        'Promemoria non attivato. Controlla che data e ora siano future.'
+      )
     }
   }
 
@@ -256,6 +327,7 @@ function Events() {
             <h2>Eventi salvati</h2>
 
             {weatherError && <p className="error-message">{weatherError}</p>}
+            {reminderError && <p className="error-message">{reminderError}</p>}
 
             {events.length === 0 ? (
               <p className="empty-message">Non hai ancora eventi salvati.</p>
@@ -285,6 +357,13 @@ function Events() {
                         </p>
                       </div>
                     )}
+
+                    {reminderByEvent[event.id] && (
+                      <div className="reminder-box">
+                        <strong>🔔 Promemoria</strong>
+                        <p>{reminderByEvent[event.id]}</p>
+                      </div>
+                    )}
                   </div>
 
                   <div className="event-actions">
@@ -302,6 +381,13 @@ function Events() {
                       {weatherLoading === event.id
                         ? 'Caricamento...'
                         : 'Vedi meteo'}
+                    </button>
+
+                    <button
+                      className="btn btn-secondary"
+                      onClick={() => handleScheduleReminder(event)}
+                    >
+                      Attiva promemoria
                     </button>
 
                     <button
