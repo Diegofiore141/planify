@@ -141,7 +141,7 @@ function Dashboard() {
               </Link>
 
               <button className="btn btn-secondary" onClick={handleLogout}>
-                Esci
+                Esci dall’account
               </button>
             </div>
           </div>
@@ -331,12 +331,6 @@ function Dashboard() {
               </div>
             )}
           </article>
-        </div>
-
-        <div className="dashboard-v3-footer-link">
-          <Link to="/" className="btn btn-secondary">
-            Torna alla home
-          </Link>
         </div>
       </section>
     </main>
