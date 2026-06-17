@@ -158,6 +158,7 @@ function Calendar() {
             eventClick={handleCalendarItemClick}
             nowIndicator={true}
             dayMaxEvents={3}
+            allDayText="Giornata"
             headerToolbar={{
               left: 'prev,next today',
               center: 'title',
