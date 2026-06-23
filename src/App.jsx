@@ -14,6 +14,7 @@ import Tasks from './pages/Tasks'
 import Offline from './pages/Offline'
 import Notifications from './pages/Notifications'
 import Calendar from './pages/Calendar'
+import ExploreEvents from './pages/ExploreEvents'
 
 function App() {
   const [isOnline, setIsOnline] = useState(true)
@@ -111,6 +112,15 @@ function App() {
             element={
               <ProtectedRoute>
                 <Calendar />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/explore"
+            element={
+              <ProtectedRoute>
+                <ExploreEvents />
               </ProtectedRoute>
             }
           />

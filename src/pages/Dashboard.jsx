@@ -122,47 +122,63 @@ function Dashboard() {
   }
 
   return (
-    <main className="dashboard-page">
-      <section className="dashboard-v3">
-        <div className="dashboard-v3-hero">
-          <div className="dashboard-v3-welcome compact-welcome-card">
-            <span className="dashboard-v3-badge">Area personale</span>
-
+    <main className="dashboard-page dashboard-clean-page">
+      <section className="dashboard-clean">
+        <div className="dashboard-clean-topbar">
+          <div>
+            <span className="dashboard-clean-kicker">Area personale</span>
             <h1>Ciao {getUserFirstName(user)} 👋</h1>
-
             <p>
-              Organizza la tua giornata da un unico posto: eventi, attività,
-              notifiche e calendario sono sempre a portata di mano.
+              Gestisci eventi, attività, notifiche e calendario da un unico
+              pannello.
             </p>
-
-            <div className="dashboard-v3-hero-actions">
-              <Link to="/calendar" className="btn btn-primary">
-                Organizza la giornata
-              </Link>
-
-              <button className="btn btn-secondary" onClick={handleLogout}>
-                Esci dall’account
-              </button>
-            </div>
           </div>
 
-          <div className="dashboard-v3-today-card">
-            <span className="dashboard-v3-card-label">Riepilogo di oggi</span>
+          <button className="btn btn-secondary" onClick={handleLogout}>
+            Esci dall’account
+          </button>
+        </div>
 
-            <div className="dashboard-v3-today-grid">
-              <div className="dashboard-v3-mini-info">
+        <div className="dashboard-clean-main-grid">
+          <section className="dashboard-clean-focus-card">
+            <div className="dashboard-clean-focus-content">
+              <span>Oggi su Planify</span>
+              <h2>Organizza la giornata in pochi click.</h2>
+              <p>
+                Apri il calendario, esplora eventi pubblici oppure aggiungi un
+                nuovo impegno personale.
+              </p>
+
+              <div className="dashboard-clean-focus-actions">
+                <Link to="/calendar" className="btn btn-primary">
+                  Apri agenda
+                </Link>
+
+                <Link to="/explore" className="btn btn-secondary">
+                  Esplora eventi
+                </Link>
+              </div>
+            </div>
+
+            <div className="dashboard-clean-summary">
+              <div>
                 <span>Task oggi</span>
                 <strong>{todayTasks.length}</strong>
               </div>
 
-              <div className="dashboard-v3-mini-info">
+              <div>
                 <span>Scadute</span>
                 <strong>{overdueTasks.length}</strong>
               </div>
             </div>
+          </section>
 
-            <div className="dashboard-v3-focus-box">
+          <aside className="dashboard-clean-next-card">
+            <span className="dashboard-clean-card-title">Prossimi impegni</span>
+
+            <div className="dashboard-clean-next-item">
               <span>Prossimo evento</span>
+
               {nextEvent ? (
                 <>
                   <strong>{nextEvent.title}</strong>
@@ -174,13 +190,14 @@ function Dashboard() {
               ) : (
                 <>
                   <strong>Nessun evento imminente</strong>
-                  <p>Quando creerai un evento, lo vedrai qui.</p>
+                  <p>Quando creerai un evento, apparirà qui.</p>
                 </>
               )}
             </div>
 
-            <div className="dashboard-v3-focus-box">
+            <div className="dashboard-clean-next-item">
               <span>Prossima attività</span>
+
               {nextTask ? (
                 <>
                   <strong>{nextTask.text}</strong>
@@ -189,76 +206,87 @@ function Dashboard() {
               ) : (
                 <>
                   <strong>Nessuna attività urgente</strong>
-                  <p>Le tue task aperte appariranno qui.</p>
+                  <p>Le task con scadenza appariranno qui.</p>
                 </>
               )}
             </div>
-          </div>
+          </aside>
         </div>
 
-        <div className="dashboard-v3-actions-grid">
-          <Link to="/calendar" className="dashboard-v3-action-card featured-action-card">
-            <div className="dashboard-v3-action-icon">📅</div>
+        <section className="dashboard-clean-actions">
+          <Link to="/calendar" className="dashboard-clean-action-card">
+            <div className="dashboard-clean-action-icon blue">📅</div>
             <div>
-              <strong>Agenda interattiva</strong>
-              <p>Crea, sposta e modifica eventi e attività.</p>
+              <strong>Agenda</strong>
+              <p>Calendario interattivo con drag & drop.</p>
             </div>
           </Link>
 
-          <Link to="/events" className="dashboard-v3-action-card">
-            <div className="dashboard-v3-action-icon">＋</div>
+          <Link
+            to="/explore"
+            className="dashboard-clean-action-card dashboard-clean-action-highlight"
+          >
+            <div className="dashboard-clean-action-icon green">🌍</div>
             <div>
-              <strong>Nuovo evento</strong>
-              <p>Aggiungi un impegno con data, ora e meteo.</p>
+              <strong>Esplora eventi</strong>
+              <p>Trova eventi pubblici e aggiungili al calendario.</p>
             </div>
           </Link>
 
-          <Link to="/tasks" className="dashboard-v3-action-card">
-            <div className="dashboard-v3-action-icon">✓</div>
+          <Link to="/events" className="dashboard-clean-action-card">
+            <div className="dashboard-clean-action-icon purple">＋</div>
             <div>
-              <strong>Nuova attività</strong>
-              <p>Gestisci task, priorità e scadenze.</p>
+              <strong>Eventi</strong>
+              <p>Crea e gestisci i tuoi impegni.</p>
             </div>
           </Link>
 
-          <Link to="/notifications" className="dashboard-v3-action-card">
-            <div className="dashboard-v3-action-icon">🔔</div>
+          <Link to="/tasks" className="dashboard-clean-action-card">
+            <div className="dashboard-clean-action-icon cyan">✓</div>
             <div>
-              <strong>Promemoria</strong>
-              <p>Controlla notifiche e avvisi degli eventi.</p>
+              <strong>Attività</strong>
+              <p>Task, priorità e scadenze.</p>
             </div>
           </Link>
-        </div>
 
-        <div className="dashboard-v3-stats-grid">
-          <article className="dashboard-v3-stat-card">
+          <Link to="/notifications" className="dashboard-clean-action-card">
+            <div className="dashboard-clean-action-icon yellow">🔔</div>
+            <div>
+              <strong>Notifiche</strong>
+              <p>Promemoria locali per gli eventi.</p>
+            </div>
+          </Link>
+        </section>
+
+        <section className="dashboard-clean-stats">
+          <article>
             <span>Eventi</span>
             <strong>{events.length}</strong>
-            <p>Totale eventi salvati</p>
+            <p>Totale salvati</p>
           </article>
 
-          <article className="dashboard-v3-stat-card">
+          <article>
             <span>Attività</span>
             <strong>{tasks.length}</strong>
-            <p>Totale attività create</p>
+            <p>Totale create</p>
           </article>
 
-          <article className="dashboard-v3-stat-card">
+          <article>
             <span>Da completare</span>
             <strong>{openTasks.length}</strong>
-            <p>Task ancora aperte</p>
+            <p>Task aperte</p>
           </article>
 
-          <article className="dashboard-v3-stat-card dashboard-v3-stat-alert">
+          <article className="dashboard-clean-stat-alert">
             <span>Urgenti</span>
             <strong>{todayTasks.length + overdueTasks.length}</strong>
-            <p>Tra oggi e attività scadute</p>
+            <p>Oggi o scadute</p>
           </article>
-        </div>
+        </section>
 
-        <div className="dashboard-v3-content-grid">
-          <article className="dashboard-v3-panel">
-            <div className="dashboard-v3-panel-header">
+        <section className="dashboard-clean-lists">
+          <article className="dashboard-clean-panel">
+            <div className="dashboard-clean-panel-header">
               <div>
                 <h2>Eventi in arrivo</h2>
                 <p>I prossimi impegni che hai pianificato.</p>
@@ -268,17 +296,27 @@ function Dashboard() {
             </div>
 
             {upcomingEvents.length === 0 ? (
-              <div className="dashboard-v3-empty">
+              <div className="dashboard-clean-empty">
                 <strong>Nessun evento imminente</strong>
-                <p>Puoi creare un evento dalla sezione Eventi o dal calendario.</p>
-                <Link to="/events" className="btn btn-secondary">
-                  Vai agli eventi
-                </Link>
+                <p>
+                  Puoi creare un evento personale o aggiungerne uno pubblico da
+                  Esplora eventi.
+                </p>
+
+                <div className="dashboard-clean-empty-actions">
+                  <Link to="/events" className="btn btn-secondary">
+                    Crea evento
+                  </Link>
+
+                  <Link to="/explore" className="btn btn-primary">
+                    Esplora eventi
+                  </Link>
+                </div>
               </div>
             ) : (
-              <div className="dashboard-v3-list">
+              <div className="dashboard-clean-list">
                 {upcomingEvents.slice(0, 4).map((event) => (
-                  <div className="dashboard-v3-list-item" key={event.id}>
+                  <div className="dashboard-clean-list-item" key={event.id}>
                     <div>
                       <strong>{event.title}</strong>
                       <p>
@@ -287,17 +325,15 @@ function Dashboard() {
                       </p>
                     </div>
 
-                    {event.location && (
-                      <span className="dashboard-v3-pill">{event.location}</span>
-                    )}
+                    {event.location && <span>{event.location}</span>}
                   </div>
                 ))}
               </div>
             )}
           </article>
 
-          <article className="dashboard-v3-panel">
-            <div className="dashboard-v3-panel-header">
+          <article className="dashboard-clean-panel">
+            <div className="dashboard-clean-panel-header">
               <div>
                 <h2>Attività urgenti</h2>
                 <p>Le task aperte più vicine alla scadenza.</p>
@@ -307,23 +343,24 @@ function Dashboard() {
             </div>
 
             {urgentTasks.length === 0 ? (
-              <div className="dashboard-v3-empty">
+              <div className="dashboard-clean-empty">
                 <strong>Nessuna attività urgente</strong>
                 <p>Quando avrai task con scadenza, appariranno qui.</p>
+
                 <Link to="/tasks" className="btn btn-secondary">
                   Vai alle attività
                 </Link>
               </div>
             ) : (
-              <div className="dashboard-v3-list">
+              <div className="dashboard-clean-list">
                 {urgentTasks.map((task) => (
-                  <div className="dashboard-v3-list-item" key={task.id}>
+                  <div className="dashboard-clean-list-item" key={task.id}>
                     <div>
                       <strong>{task.text}</strong>
                       <p>Scadenza: {formatDateLabel(task.dueDate)}</p>
                     </div>
 
-                    <span className={`dashboard-v3-priority ${task.priority || 'media'}`}>
+                    <span className={`dashboard-clean-priority ${task.priority || 'media'}`}>
                       {getPriorityLabel(task.priority)}
                     </span>
                   </div>
@@ -331,7 +368,7 @@ function Dashboard() {
               </div>
             )}
           </article>
-        </div>
+        </section>
       </section>
     </main>
   )
