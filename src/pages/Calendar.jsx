@@ -2,14 +2,17 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router'
 import {
   addDoc,
+  arrayRemove,
   collection,
   deleteDoc,
   doc,
+  getDoc,
   onSnapshot,
   orderBy,
   query,
   serverTimestamp,
   updateDoc,
+  writeBatch,
 } from 'firebase/firestore'
 
 import FullCalendar from '@fullcalendar/react'
@@ -48,8 +51,35 @@ function formatTime(date) {
   return `${hours}:${minutes}`
 }
 
+function getEventVisibilityLabel(eventItem, userId) {
+  if (eventItem.sourcePublicEventId && eventItem.sourceOwnerId === userId) {
+    return 'Pubblico'
+  }
+
+  if (eventItem.sourcePublicEventId && eventItem.sourceOwnerId !== userId) {
+    return 'Da Esplora'
+  }
+
+  return 'Privato'
+}
+
+function getEventVisibilityClass(eventItem, userId) {
+  if (eventItem.sourcePublicEventId && eventItem.sourceOwnerId === userId) {
+    return 'public'
+  }
+
+  if (eventItem.sourcePublicEventId && eventItem.sourceOwnerId !== userId) {
+    return 'explore'
+  }
+
+  return 'private'
+}
+
 function Calendar() {
   const { user } = useAuth()
+
+  const userId = user?.uid || ''
+  const userName = user?.displayName || 'Utente Planify'
 
   const [events, setEvents] = useState([])
   const [tasks, setTasks] = useState([])
@@ -70,6 +100,7 @@ function Calendar() {
     time: '',
     location: '',
     description: '',
+    visibility: 'private',
   })
 
   const [taskForm, setTaskForm] = useState({
@@ -80,26 +111,26 @@ function Calendar() {
   })
 
   useEffect(() => {
-    if (!user) return
+    if (!userId) return
 
-    const eventsRef = collection(db, 'users', user.uid, 'events')
+    const eventsRef = collection(db, 'users', userId, 'events')
     const eventsQuery = query(eventsRef, orderBy('date', 'asc'))
 
     const unsubscribeEvents = onSnapshot(eventsQuery, (snapshot) => {
-      const eventsData = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
+      const eventsData = snapshot.docs.map((document) => ({
+        id: document.id,
+        ...document.data(),
       }))
 
       setEvents(eventsData)
     })
 
-    const tasksRef = collection(db, 'users', user.uid, 'tasks')
+    const tasksRef = collection(db, 'users', userId, 'tasks')
 
     const unsubscribeTasks = onSnapshot(tasksRef, (snapshot) => {
-      const tasksData = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
+      const tasksData = snapshot.docs.map((document) => ({
+        id: document.id,
+        ...document.data(),
       }))
 
       setTasks(tasksData)
@@ -109,7 +140,7 @@ function Calendar() {
       unsubscribeEvents()
       unsubscribeTasks()
     }
-  }, [user])
+  }, [userId])
 
   const calendarItems = useMemo(() => {
     const eventItems = events
@@ -133,6 +164,9 @@ function Calendar() {
             time: eventItem.time || '',
             location: eventItem.location || '',
             description: eventItem.description || '',
+            visibility: eventItem.visibility || 'private',
+            sourcePublicEventId: eventItem.sourcePublicEventId || '',
+            sourceOwnerId: eventItem.sourceOwnerId || '',
           },
         }
       })
@@ -166,6 +200,14 @@ function Calendar() {
     return [...eventItems, ...taskItems]
   }, [events, tasks])
 
+  function getCurrentVisibility(item) {
+    if (item.sourcePublicEventId && item.sourceOwnerId === userId) {
+      return 'public'
+    }
+
+    return item.visibility || 'private'
+  }
+
   function handleCalendarItemClick(info) {
     const item = info.event.extendedProps
 
@@ -183,6 +225,7 @@ function Calendar() {
         time: item.time || '',
         location: item.location || '',
         description: item.description || '',
+        visibility: getCurrentVisibility(item),
       })
     }
 
@@ -211,6 +254,7 @@ function Calendar() {
       time: '',
       location: '',
       description: '',
+      visibility: 'private',
     })
 
     setTaskForm({
@@ -238,7 +282,9 @@ function Calendar() {
       setCalendarError('')
 
       if (item.type === 'event') {
-        const eventRef = doc(db, 'users', user.uid, 'events', item.originalId)
+        const batch = writeBatch(db)
+
+        const eventRef = doc(db, 'users', userId, 'events', item.originalId)
 
         const updatedEvent = {
           date: newDate,
@@ -248,14 +294,26 @@ function Calendar() {
           updatedEvent.time = formatTime(newStartDate)
         }
 
-        await updateDoc(eventRef, updatedEvent)
+        batch.update(eventRef, updatedEvent)
+
+        if (item.sourcePublicEventId && item.sourceOwnerId === userId) {
+          const publicEventRef = doc(
+            db,
+            'publicEvents',
+            item.sourcePublicEventId
+          )
+
+          batch.update(publicEventRef, updatedEvent)
+        }
+
+        await batch.commit()
 
         setCalendarMessage('Evento spostato correttamente.')
         return
       }
 
       if (item.type === 'task') {
-        const taskRef = doc(db, 'users', user.uid, 'tasks', item.originalId)
+        const taskRef = doc(db, 'users', userId, 'tasks', item.originalId)
 
         await updateDoc(taskRef, {
           dueDate: newDate,
@@ -285,19 +343,69 @@ function Calendar() {
       return
     }
 
-    const eventsRef = collection(db, 'users', user.uid, 'events')
+    setPopupError('')
+    setCalendarMessage('')
+    setCalendarError('')
 
-    await addDoc(eventsRef, {
-      title: eventForm.title,
+    const eventData = {
+      title: eventForm.title.trim(),
       date: eventForm.date,
       time: eventForm.time,
-      location: eventForm.location,
-      description: eventForm.description,
-      createdAt: serverTimestamp(),
-    })
+      location: eventForm.location.trim(),
+      description: eventForm.description.trim(),
+    }
 
-    setCalendarMessage('Evento creato correttamente.')
-    closePopup()
+    const participant = {
+      uid: userId,
+      name: userName,
+      joinedAt: new Date().toISOString(),
+    }
+
+    try {
+      const batch = writeBatch(db)
+      const personalEventRef = doc(collection(db, 'users', userId, 'events'))
+
+      if (eventForm.visibility === 'public') {
+        const publicEventRef = doc(collection(db, 'publicEvents'))
+
+        batch.set(publicEventRef, {
+          ...eventData,
+          ownerId: userId,
+          ownerName: userName,
+          participantIds: [userId],
+          participants: [participant],
+          participantCount: 1,
+          createdAt: serverTimestamp(),
+        })
+
+        batch.set(personalEventRef, {
+          ...eventData,
+          visibility: 'public',
+          sourcePublicEventId: publicEventRef.id,
+          sourceOwnerId: userId,
+          createdAt: serverTimestamp(),
+        })
+      } else {
+        batch.set(personalEventRef, {
+          ...eventData,
+          visibility: 'private',
+          createdAt: serverTimestamp(),
+        })
+      }
+
+      await batch.commit()
+
+      setCalendarMessage(
+        eventForm.visibility === 'public'
+          ? 'Evento pubblico creato e pubblicato in Esplora eventi.'
+          : 'Evento privato creato correttamente.'
+      )
+
+      closePopup()
+    } catch (error) {
+      console.error(error)
+      setPopupError('Errore durante la creazione dell’evento.')
+    }
   }
 
   async function handleCreateTask(event) {
@@ -308,7 +416,7 @@ function Calendar() {
       return
     }
 
-    const tasksRef = collection(db, 'users', user.uid, 'tasks')
+    const tasksRef = collection(db, 'users', userId, 'tasks')
 
     await addDoc(tasksRef, {
       text: taskForm.text,
@@ -330,23 +438,142 @@ function Calendar() {
       return
     }
 
-    const eventRef = doc(
-      db,
-      'users',
-      user.uid,
-      'events',
-      selectedItem.originalId
-    )
+    setPopupError('')
+    setCalendarMessage('')
+    setCalendarError('')
 
-    await updateDoc(eventRef, {
-      title: eventForm.title,
+    const eventData = {
+      title: eventForm.title.trim(),
       date: eventForm.date,
       time: eventForm.time,
-      location: eventForm.location,
-      description: eventForm.description,
-    })
+      location: eventForm.location.trim(),
+      description: eventForm.description.trim(),
+    }
 
-    closePopup()
+    const participant = {
+      uid: userId,
+      name: userName,
+      joinedAt: new Date().toISOString(),
+    }
+
+    const isOwnedPublicEvent =
+      selectedItem.sourcePublicEventId && selectedItem.sourceOwnerId === userId
+
+    const isCopiedPublicEvent =
+      selectedItem.sourcePublicEventId && selectedItem.sourceOwnerId !== userId
+
+    try {
+      const batch = writeBatch(db)
+
+      const eventRef = doc(
+        db,
+        'users',
+        userId,
+        'events',
+        selectedItem.originalId
+      )
+
+      if (isCopiedPublicEvent) {
+        batch.update(eventRef, {
+          ...eventData,
+        })
+
+        await batch.commit()
+
+        setCalendarMessage('Copia personale aggiornata correttamente.')
+        closePopup()
+        return
+      }
+
+      if (eventForm.visibility === 'public') {
+        if (isOwnedPublicEvent) {
+          const publicEventRef = doc(
+            db,
+            'publicEvents',
+            selectedItem.sourcePublicEventId
+          )
+
+          batch.update(eventRef, {
+            ...eventData,
+            visibility: 'public',
+          })
+
+          batch.update(publicEventRef, {
+            ...eventData,
+          })
+        } else {
+          const publicEventRef = doc(collection(db, 'publicEvents'))
+
+          batch.update(eventRef, {
+            ...eventData,
+            visibility: 'public',
+            sourcePublicEventId: publicEventRef.id,
+            sourceOwnerId: userId,
+          })
+
+          batch.set(publicEventRef, {
+            ...eventData,
+            ownerId: userId,
+            ownerName: userName,
+            participantIds: [userId],
+            participants: [participant],
+            participantCount: 1,
+            createdAt: serverTimestamp(),
+          })
+        }
+      } else {
+        if (isOwnedPublicEvent) {
+          const publicEventRef = doc(
+            db,
+            'publicEvents',
+            selectedItem.sourcePublicEventId
+          )
+
+          const publicEventSnapshot = await getDoc(publicEventRef)
+
+          if (publicEventSnapshot.exists()) {
+            const publicEventData = publicEventSnapshot.data()
+
+            const participantCount =
+              publicEventData.participantCount ||
+              publicEventData.participantIds?.length ||
+              publicEventData.participants?.length ||
+              0
+
+            if (participantCount > 1) {
+              setPopupError(
+                'Non puoi rendere privato un evento pubblico con partecipanti iscritti. Puoi lasciarlo pubblico oppure creare un nuovo evento privato.'
+              )
+              return
+            }
+          }
+
+          batch.update(eventRef, {
+            ...eventData,
+            visibility: 'private',
+            sourcePublicEventId: '',
+            sourceOwnerId: '',
+          })
+
+          batch.delete(publicEventRef)
+        } else {
+          batch.update(eventRef, {
+            ...eventData,
+            visibility: 'private',
+            sourcePublicEventId: '',
+            sourceOwnerId: '',
+          })
+        }
+      }
+
+      await batch.commit()
+
+      setCalendarMessage('Evento aggiornato correttamente.')
+      closePopup()
+    } catch (error) {
+      console.error(error)
+      setPopupError('Errore durante l’aggiornamento dell’evento.')
+    }
   }
 
   async function handleUpdateTask(event) {
@@ -357,13 +584,7 @@ function Calendar() {
       return
     }
 
-    const taskRef = doc(
-      db,
-      'users',
-      user.uid,
-      'tasks',
-      selectedItem.originalId
-    )
+    const taskRef = doc(db, 'users', userId, 'tasks', selectedItem.originalId)
 
     await updateDoc(taskRef, {
       text: taskForm.text,
@@ -378,33 +599,100 @@ function Calendar() {
   async function handleDeleteSelectedItem() {
     if (!selectedItem) return
 
-    if (selectedItem.type === 'event') {
-      const eventRef = doc(
-        db,
-        'users',
-        user.uid,
-        'events',
-        selectedItem.originalId
-      )
+    setPopupError('')
+    setCalendarMessage('')
+    setCalendarError('')
 
-      await deleteDoc(eventRef)
-      closePopup()
-      return
-    }
+    try {
+      if (selectedItem.type === 'event') {
+        const batch = writeBatch(db)
 
-    if (selectedItem.type === 'task') {
-      const taskRef = doc(
-        db,
-        'users',
-        user.uid,
-        'tasks',
-        selectedItem.originalId
-      )
+        const eventRef = doc(
+          db,
+          'users',
+          userId,
+          'events',
+          selectedItem.originalId
+        )
 
-      await deleteDoc(taskRef)
-      closePopup()
+        if (selectedItem.sourcePublicEventId) {
+          const publicEventRef = doc(
+            db,
+            'publicEvents',
+            selectedItem.sourcePublicEventId
+          )
+
+          if (selectedItem.sourceOwnerId === userId) {
+            batch.delete(publicEventRef)
+          } else {
+            const publicEventSnapshot = await getDoc(publicEventRef)
+
+            if (publicEventSnapshot.exists()) {
+              const publicEventData = publicEventSnapshot.data()
+
+              const participantToRemove = publicEventData.participants?.find(
+                (participantItem) => participantItem.uid === userId
+              )
+
+              const participantCount =
+                publicEventData.participantCount ||
+                publicEventData.participantIds?.length ||
+                publicEventData.participants?.length ||
+                0
+
+              const updateData = {
+                participantIds: arrayRemove(userId),
+                participantCount: Math.max(participantCount - 1, 0),
+              }
+
+              if (participantToRemove) {
+                updateData.participants = arrayRemove(participantToRemove)
+              }
+
+              batch.update(publicEventRef, updateData)
+            }
+          }
+        }
+
+        batch.delete(eventRef)
+
+        await batch.commit()
+
+        setCalendarMessage(
+          selectedItem.sourcePublicEventId &&
+            selectedItem.sourceOwnerId !== userId
+            ? 'Evento rimosso dal tuo calendario e partecipazione annullata.'
+            : 'Evento eliminato.'
+        )
+
+        closePopup()
+        return
+      }
+
+      if (selectedItem.type === 'task') {
+        const taskRef = doc(
+          db,
+          'users',
+          userId,
+          'tasks',
+          selectedItem.originalId
+        )
+
+        await deleteDoc(taskRef)
+
+        setCalendarMessage('Attività eliminata.')
+        closePopup()
+      }
+    } catch (error) {
+      console.error(error)
+      setPopupError('Errore durante l’eliminazione.')
     }
   }
+
+  const isEditingCopiedPublicEvent =
+    selectedItem?.type === 'event' &&
+    selectedItem?.sourcePublicEventId &&
+    selectedItem?.sourceOwnerId !== userId
 
   return (
     <main className="dashboard-page">
@@ -623,6 +911,64 @@ function Calendar() {
                       />
                     </label>
 
+                    <div className="event-visibility-box">
+                      <span>Visibilità evento</span>
+
+                      <div className="event-visibility-options">
+                        <label
+                          className={
+                            eventForm.visibility === 'private'
+                              ? 'event-visibility-option active'
+                              : 'event-visibility-option'
+                          }
+                        >
+                          <input
+                            type="radio"
+                            name="calendar-create-visibility"
+                            value="private"
+                            checked={eventForm.visibility === 'private'}
+                            onChange={() =>
+                              setEventForm({
+                                ...eventForm,
+                                visibility: 'private',
+                              })
+                            }
+                          />
+
+                          <div>
+                            <strong>Privato</strong>
+                            <p>Lo vedi solo tu nel tuo calendario.</p>
+                          </div>
+                        </label>
+
+                        <label
+                          className={
+                            eventForm.visibility === 'public'
+                              ? 'event-visibility-option active'
+                              : 'event-visibility-option'
+                          }
+                        >
+                          <input
+                            type="radio"
+                            name="calendar-create-visibility"
+                            value="public"
+                            checked={eventForm.visibility === 'public'}
+                            onChange={() =>
+                              setEventForm({
+                                ...eventForm,
+                                visibility: 'public',
+                              })
+                            }
+                          />
+
+                          <div>
+                            <strong>Pubblico</strong>
+                            <p>Compare anche in Esplora eventi.</p>
+                          </div>
+                        </label>
+                      </div>
+                    </div>
+
                     {popupError && (
                       <p className="error-message">{popupError}</p>
                     )}
@@ -746,6 +1092,18 @@ function Calendar() {
                 {!isEditing && selectedItem.type === 'event' && (
                   <>
                     <div className="calendar-popup-content">
+                      <p>
+                        <strong>Visibilità:</strong>{' '}
+                        <span
+                          className={`event-visibility-pill ${getEventVisibilityClass(
+                            selectedItem,
+                            userId
+                          )}`}
+                        >
+                          {getEventVisibilityLabel(selectedItem, userId)}
+                        </span>
+                      </p>
+
                       <p>
                         <strong>Data:</strong> {eventForm.date}
                       </p>
@@ -919,6 +1277,74 @@ function Calendar() {
                         }
                       />
                     </label>
+
+                    {isEditingCopiedPublicEvent ? (
+                      <div className="event-visibility-info">
+                        <strong>Evento aggiunto da Esplora eventi</strong>
+                        <p>
+                          Stai modificando solo la tua copia personale.
+                          L’evento pubblico originale non viene modificato.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="event-visibility-box">
+                        <span>Visibilità evento</span>
+
+                        <div className="event-visibility-options">
+                          <label
+                            className={
+                              eventForm.visibility === 'private'
+                                ? 'event-visibility-option active'
+                                : 'event-visibility-option'
+                            }
+                          >
+                            <input
+                              type="radio"
+                              name="calendar-edit-visibility"
+                              value="private"
+                              checked={eventForm.visibility === 'private'}
+                              onChange={() =>
+                                setEventForm({
+                                  ...eventForm,
+                                  visibility: 'private',
+                                })
+                              }
+                            />
+
+                            <div>
+                              <strong>Privato</strong>
+                              <p>Lo vedi solo tu nel tuo calendario.</p>
+                            </div>
+                          </label>
+
+                          <label
+                            className={
+                              eventForm.visibility === 'public'
+                                ? 'event-visibility-option active'
+                                : 'event-visibility-option'
+                            }
+                          >
+                            <input
+                              type="radio"
+                              name="calendar-edit-visibility"
+                              value="public"
+                              checked={eventForm.visibility === 'public'}
+                              onChange={() =>
+                                setEventForm({
+                                  ...eventForm,
+                                  visibility: 'public',
+                                })
+                              }
+                            />
+
+                            <div>
+                              <strong>Pubblico</strong>
+                              <p>Compare anche in Esplora eventi.</p>
+                            </div>
+                          </label>
+                        </div>
+                      </div>
+                    )}
 
                     {popupError && (
                       <p className="error-message">{popupError}</p>
