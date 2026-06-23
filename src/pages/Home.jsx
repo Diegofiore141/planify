@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router'
 import logo from '../assets/logo.png'
+import SoftAuroraBackground from '../components/SoftAuroraBackground'
 
 const previewDays = [
   {
@@ -75,6 +76,8 @@ function Home() {
 
   return (
     <main className="app">
+      <SoftAuroraBackground />
+
       <nav className="navbar">
         <Link to="/" className="logo">
           <img src={logo} alt="Logo Planify" className="logo-image" />
@@ -218,6 +221,15 @@ function Home() {
         </article>
 
         <article>
+          <span>🌍</span>
+          <h3>Eventi pubblici</h3>
+          <p>
+            Cerca eventi pubblici creati da altri utenti e aggiungili al tuo
+            calendario personale.
+          </p>
+        </article>
+
+        <article>
           <span>🔔</span>
           <h3>Promemoria</h3>
           <p>
@@ -234,15 +246,6 @@ function Home() {
             include una pagina offline personalizzata.
           </p>
         </article>
-
-        <article>
-          <span>🔐</span>
-          <h3>Area personale</h3>
-          <p>
-            Ogni utente autenticato accede ai propri eventi e alle proprie
-            attività salvate su Firestore.
-          </p>
-        </article>
       </section>
 
       <section className="home-v2-cta">
@@ -252,8 +255,8 @@ function Home() {
           <h2>Accedi alla tua area personale e inizia a pianificare.</h2>
 
           <p>
-            Dashboard, calendario, eventi, attività e notifiche sono raccolti in
-            un’unica esperienza semplice e ordinata.
+            Dashboard, calendario, eventi, attività, notifiche ed eventi
+            pubblici sono raccolti in un’unica esperienza semplice e ordinata.
           </p>
         </div>
 

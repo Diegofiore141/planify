@@ -4704,3 +4704,580 @@ button {
 .fc-daygrid-event-dot {
   flex-shrink: 0;
 }
+/* Soft Aurora background - effetto leggero per Home */
+.app {
+  position: relative;
+  overflow: hidden;
+}
+
+.soft-aurora-background {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.soft-aurora-shape {
+  position: absolute;
+  border-radius: 999px;
+  filter: blur(70px);
+  opacity: 0.32;
+  animation: softAuroraFloat 16s ease-in-out infinite alternate;
+}
+
+.soft-aurora-shape-one {
+  width: 360px;
+  height: 360px;
+  top: 90px;
+  left: -90px;
+  background: #60a5fa;
+}
+
+.soft-aurora-shape-two {
+  width: 420px;
+  height: 420px;
+  top: 220px;
+  right: -120px;
+  background: #34d399;
+  animation-delay: 2s;
+}
+
+.soft-aurora-shape-three {
+  width: 300px;
+  height: 300px;
+  bottom: 40px;
+  left: 42%;
+  background: #a78bfa;
+  animation-delay: 4s;
+}
+
+.navbar,
+.home-v2-hero,
+.home-v2-features,
+.home-v2-cta {
+  position: relative;
+  z-index: 1;
+}
+
+@keyframes softAuroraFloat {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+
+  50% {
+    transform: translate3d(35px, -25px, 0) scale(1.08);
+  }
+
+  100% {
+    transform: translate3d(-25px, 30px, 0) scale(0.96);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .soft-aurora-shape {
+    animation: none;
+  }
+}
+
+/* Auth pages v2 */
+.auth-page-v2 {
+  position: relative;
+  min-height: 100vh;
+  padding: 34px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+.auth-v2-shell {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 1120px;
+  display: grid;
+  grid-template-columns: 1.05fr 0.75fr;
+  gap: 28px;
+  align-items: center;
+}
+
+.auth-v2-info {
+  padding: 34px;
+}
+
+.auth-v2-logo {
+  width: fit-content;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 34px;
+  color: #0f172a;
+  text-decoration: none;
+  font-size: 22px;
+  font-weight: 950;
+}
+
+.auth-v2-logo img {
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  object-fit: cover;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.16);
+}
+
+.auth-v2-badge {
+  display: inline-flex;
+  margin-bottom: 18px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: #dbeafe;
+  color: #1d4ed8;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.auth-v2-info h1 {
+  max-width: 620px;
+  margin: 0;
+  color: #0f172a;
+  font-size: clamp(40px, 5vw, 66px);
+  line-height: 0.98;
+  letter-spacing: -1.8px;
+}
+
+.auth-v2-info p {
+  max-width: 610px;
+  margin: 22px 0 28px;
+  color: #475569;
+  font-size: 18px;
+  line-height: 1.7;
+}
+
+.auth-v2-preview {
+  max-width: 620px;
+  display: grid;
+  gap: 12px;
+}
+
+.auth-v2-preview div {
+  padding: 16px 18px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.95);
+  box-shadow: 0 16px 45px rgba(15, 23, 42, 0.08);
+}
+
+.auth-v2-preview strong {
+  display: block;
+  margin-bottom: 5px;
+  color: #0f172a;
+}
+
+.auth-v2-preview span {
+  color: #64748b;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.auth-card-v2 {
+  width: auto;
+  max-width: none;
+  padding: 30px;
+  border-radius: 30px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.95);
+  box-shadow: 0 30px 90px rgba(15, 23, 42, 0.16);
+  backdrop-filter: blur(16px);
+}
+
+.auth-card-v2-header {
+  margin-bottom: 22px;
+}
+
+.auth-card-v2-header span {
+  display: inline-flex;
+  margin-bottom: 10px;
+  color: #2563eb;
+  font-size: 13px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.auth-card-v2-header h2 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 34px;
+  letter-spacing: -0.8px;
+}
+
+.auth-card-v2-header p {
+  margin: 10px 0 0;
+  color: #64748b;
+  line-height: 1.5;
+}
+
+.auth-form-v2 {
+  gap: 15px;
+}
+
+.auth-form-v2 label {
+  color: #334155;
+  font-weight: 900;
+}
+
+.auth-form-v2 input {
+  margin-top: 8px;
+  border-radius: 16px;
+  border: 1px solid #cbd5e1;
+  background: white;
+}
+
+.auth-form-v2 input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.13);
+  outline: none;
+}
+
+.auth-google-button {
+  width: 100%;
+  justify-content: center;
+}
+
+.auth-card-v2 .auth-link {
+  margin-top: 18px;
+}
+
+.auth-card-v2 .back-home {
+  display: inline-flex;
+  margin-top: 12px;
+}
+
+@media (max-width: 900px) {
+  .auth-page-v2 {
+    padding: 22px;
+  }
+
+  .auth-v2-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .auth-v2-info {
+    padding: 10px 4px;
+  }
+
+  .auth-v2-logo {
+    margin-bottom: 24px;
+  }
+
+  .auth-v2-info h1 {
+    font-size: 42px;
+  }
+}
+
+@media (max-width: 600px) {
+  .auth-card-v2 {
+    padding: 24px;
+  }
+
+  .auth-v2-preview {
+    display: none;
+  }
+}
+/* ============================= */
+/* Motion polish Planify */
+/* ============================= */
+
+/* Entrata morbida delle pagine principali */
+.home-v2-hero,
+.home-v2-features,
+.home-v2-cta,
+.dashboard-clean,
+.explore-page,
+.events-layout,
+.calendar-layout,
+.improved-tasks-layout,
+.notifications-page,
+.auth-v2-shell {
+  animation: planifyPageEnter 0.55s ease both;
+}
+
+@keyframes planifyPageEnter {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Card che entrano leggermente una dopo l'altra */
+.home-v2-features article,
+.dashboard-clean-action-card,
+.dashboard-clean-stats article,
+.dashboard-clean-panel,
+.explore-event-card,
+.events-summary-card,
+.improved-event-card,
+.task-card,
+.notification-card,
+.auth-v2-preview div {
+  animation: planifyCardEnter 0.5s ease both;
+}
+
+.home-v2-features article:nth-child(2),
+.dashboard-clean-action-card:nth-child(2),
+.dashboard-clean-stats article:nth-child(2),
+.explore-event-card:nth-child(2) {
+  animation-delay: 0.05s;
+}
+
+.home-v2-features article:nth-child(3),
+.dashboard-clean-action-card:nth-child(3),
+.dashboard-clean-stats article:nth-child(3),
+.explore-event-card:nth-child(3) {
+  animation-delay: 0.1s;
+}
+
+.home-v2-features article:nth-child(4),
+.dashboard-clean-action-card:nth-child(4),
+.dashboard-clean-stats article:nth-child(4),
+.explore-event-card:nth-child(4) {
+  animation-delay: 0.15s;
+}
+
+.home-v2-features article:nth-child(5),
+.dashboard-clean-action-card:nth-child(5),
+.explore-event-card:nth-child(5) {
+  animation-delay: 0.2s;
+}
+
+@keyframes planifyCardEnter {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Hover più moderno su card cliccabili */
+.home-v2-preview-card,
+.home-v2-features article,
+.home-v2-cta,
+.dashboard-clean-action-card,
+.dashboard-clean-panel,
+.dashboard-clean-stats article,
+.explore-panel,
+.explore-event-card,
+.improved-event-card,
+.task-card,
+.auth-card-v2 {
+  transition:
+    transform 0.22s ease,
+    box-shadow 0.22s ease,
+    border-color 0.22s ease,
+    background 0.22s ease;
+}
+
+.home-v2-features article:hover,
+.dashboard-clean-action-card:hover,
+.explore-event-card:hover,
+.improved-event-card:hover,
+.task-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 28px 75px rgba(15, 23, 42, 0.14);
+}
+
+/* Pulsanti più vivi ma sobri */
+.btn {
+  position: relative;
+  overflow: hidden;
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    background 0.18s ease,
+    border-color 0.18s ease;
+}
+
+.btn:hover {
+  transform: translateY(-2px);
+}
+
+.btn-primary:hover {
+  box-shadow: 0 16px 34px rgba(37, 99, 235, 0.28);
+}
+
+.btn-secondary:hover,
+.btn-ghost:hover {
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.1);
+}
+
+/* Piccola luce sui bottoni principali */
+.btn-primary::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -120%;
+  width: 70%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.32),
+    transparent
+  );
+  transform: skewX(-18deg);
+  transition: left 0.55s ease;
+}
+
+.btn-primary:hover::after {
+  left: 130%;
+}
+
+/* Background leggero anche nelle pagine interne */
+.dashboard-page {
+  position: relative;
+  overflow-x: hidden;
+}
+
+.dashboard-page::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 8% 18%, rgba(96, 165, 250, 0.18), transparent 32%),
+    radial-gradient(circle at 92% 24%, rgba(52, 211, 153, 0.16), transparent 30%),
+    radial-gradient(circle at 50% 95%, rgba(167, 139, 250, 0.13), transparent 34%);
+  animation: planifyInternalAurora 18s ease-in-out infinite alternate;
+}
+
+.dashboard-page > * {
+  position: relative;
+  z-index: 1;
+}
+
+@keyframes planifyInternalAurora {
+  from {
+    transform: translate3d(0, 0, 0) scale(1);
+    opacity: 0.75;
+  }
+
+  to {
+    transform: translate3d(18px, -16px, 0) scale(1.04);
+    opacity: 1;
+  }
+}
+
+/* Input più fluidi */
+input,
+textarea,
+select {
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    background 0.18s ease;
+}
+
+/* Tabs e filtri più morbidi */
+.event-filter,
+.explore-filter,
+.home-v2-tab,
+.create-type-button {
+  transition:
+    background 0.18s ease,
+    color 0.18s ease,
+    transform 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.event-filter:hover,
+.explore-filter:hover,
+.home-v2-tab:hover,
+.create-type-button:hover {
+  transform: translateY(-1px);
+}
+
+/* Rispetta chi disattiva le animazioni */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}
+/* Motion polish più visibile */
+.home-v2-preview-card,
+.home-v2-features article,
+.dashboard-clean-action-card,
+.dashboard-clean-panel,
+.explore-event-card,
+.improved-event-card,
+.task-card,
+.auth-card-v2 {
+  transform: translateY(0) scale(1);
+}
+
+.home-v2-preview-card:hover,
+.home-v2-features article:hover,
+.dashboard-clean-action-card:hover,
+.dashboard-clean-panel:hover,
+.explore-event-card:hover,
+.improved-event-card:hover,
+.task-card:hover,
+.auth-card-v2:hover {
+  transform: translateY(-7px) scale(1.01);
+  box-shadow: 0 32px 90px rgba(15, 23, 42, 0.17);
+}
+
+.dashboard-clean-focus-card,
+.explore-hero,
+.events-header,
+.calendar-header,
+.home-v2-preview-card,
+.auth-card-v2 {
+  position: relative;
+  overflow: hidden;
+}
+
+.dashboard-clean-focus-card::after,
+.explore-hero::after,
+.events-header::after,
+.calendar-header::after,
+.home-v2-preview-card::after,
+.auth-card-v2::after {
+  content: '';
+  position: absolute;
+  inset: -40%;
+  background: linear-gradient(
+    120deg,
+    transparent 35%,
+    rgba(255, 255, 255, 0.35) 50%,
+    transparent 65%
+  );
+  transform: translateX(-70%) rotate(8deg);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.soft-aurora-shape {
+  opacity: 0.45;
+  filter: blur(58px);
+}
+
+.dashboard-page::before {
+  background:
+    radial-gradient(circle at 8% 18%, rgba(96, 165, 250, 0.25), transparent 34%),
+    radial-gradient(circle at 92% 24%, rgba(52, 211, 153, 0.22), transparent 32%),
+    radial-gradient(circle at 50% 95%, rgba(167, 139, 250, 0.18), transparent 36%);
+}
