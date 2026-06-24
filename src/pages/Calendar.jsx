@@ -36,6 +36,46 @@ function getPriorityClass(priority) {
   return 'task-priority-media'
 }
 
+function getTaskPriorityColors(priority) {
+  if (priority === 'alta') {
+    return {
+      backgroundColor: '#fee2e2',
+      borderColor: '#dc2626',
+      textColor: '#991b1b',
+    }
+  }
+
+  if (priority === 'bassa') {
+    return {
+      backgroundColor: '#dcfce7',
+      borderColor: '#16a34a',
+      textColor: '#166534',
+    }
+  }
+
+  return {
+    backgroundColor: '#fef3c7',
+    borderColor: '#d97706',
+    textColor: '#92400e',
+  }
+}
+
+function getHolidayColors() {
+  return {
+    backgroundColor: 'rgba(255, 255, 255, 0.72)',
+    borderColor: '#16a34a',
+    textColor: '#166534',
+  }
+}
+
+function getUnavailableEventColors() {
+  return {
+    backgroundColor: '#fef3c7',
+    borderColor: '#f59e0b',
+    textColor: '#92400e',
+  }
+}
+
 function formatDate(date) {
   const year = date.getFullYear()
   const month = String(date.getMonth() + 1).padStart(2, '0')
@@ -64,19 +104,23 @@ function getCalendarEventKind(eventItem, userId) {
 }
 
 function getCalendarEventColors(kind) {
+  if (kind === 'unavailable') {
+    return getUnavailableEventColors()
+  }
+
   if (kind === 'public') {
     return {
-      backgroundColor: '#dcfce7',
-      borderColor: '#16a34a',
-      textColor: '#166534',
+      backgroundColor: '#f3e8ff',
+      borderColor: '#9333ea',
+      textColor: '#6b21a8',
     }
   }
 
   if (kind === 'explore') {
     return {
-      backgroundColor: '#ede9fe',
-      borderColor: '#7c3aed',
-      textColor: '#5b21b6',
+      backgroundColor: '#fce7f3',
+      borderColor: '#db2777',
+      textColor: '#9d174d',
     }
   }
 
@@ -87,7 +131,11 @@ function getCalendarEventColors(kind) {
   }
 }
 
-function getEventVisibilityLabel(eventItem, userId) {
+function getEventVisibilityLabel(eventItem, userId, isPublicSourceMissing = false) {
+  if (isPublicSourceMissing) {
+    return 'Non più pubblico'
+  }
+
   if (eventItem.sourcePublicEventId && eventItem.sourceOwnerId !== userId) {
     return 'Da Esplora'
   }
@@ -99,7 +147,11 @@ function getEventVisibilityLabel(eventItem, userId) {
   return 'Privato'
 }
 
-function getEventVisibilityClass(eventItem, userId) {
+function getEventVisibilityClass(eventItem, userId, isPublicSourceMissing = false) {
+  if (isPublicSourceMissing) {
+    return 'unavailable'
+  }
+
   if (eventItem.sourcePublicEventId && eventItem.sourceOwnerId !== userId) {
     return 'explore'
   }
@@ -220,10 +272,11 @@ function Calendar() {
   const { user } = useAuth()
 
   const userId = user?.uid || ''
-  const userName = user?.displayName || 'Utente Planify'
+  const userName = user?.displayName || user?.email || 'Utente Planify'
 
   const [events, setEvents] = useState([])
   const [tasks, setTasks] = useState([])
+  const [publicEvents, setPublicEvents] = useState([])
 
   const [selectedItem, setSelectedItem] = useState(null)
   const [isEditing, setIsEditing] = useState(false)
@@ -234,6 +287,17 @@ function Calendar() {
   const [popupError, setPopupError] = useState('')
   const [calendarMessage, setCalendarMessage] = useState('')
   const [calendarError, setCalendarError] = useState('')
+  const [calendarRenderVersion, setCalendarRenderVersion] = useState(0)
+
+  const [calendarFilters, setCalendarFilters] = useState({
+    privateEvents: true,
+    publicEvents: true,
+    exploreEvents: true,
+    lowTasks: true,
+    mediumTasks: true,
+    highTasks: true,
+    holidays: true,
+  })
 
   const [eventForm, setEventForm] = useState({
     title: '',
@@ -252,30 +316,44 @@ function Calendar() {
   })
 
   useEffect(() => {
-    if (!userId) return
+    if (!userId) return undefined
 
     const eventsRef = collection(db, 'users', userId, 'events')
     const eventsQuery = query(eventsRef, orderBy('date', 'asc'))
 
-    const unsubscribeEvents = onSnapshot(eventsQuery, (snapshot) => {
-      const eventsData = snapshot.docs.map((document) => ({
-        id: document.id,
-        ...document.data(),
-      }))
+    const unsubscribeEvents = onSnapshot(
+      eventsQuery,
+      (snapshot) => {
+        const eventsData = snapshot.docs.map((document) => ({
+          id: document.id,
+          ...document.data(),
+        }))
 
-      setEvents(eventsData)
-    })
+        setEvents(eventsData)
+      },
+      (error) => {
+        console.error(error)
+        setCalendarError('Errore durante il caricamento degli eventi.')
+      }
+    )
 
     const tasksRef = collection(db, 'users', userId, 'tasks')
 
-    const unsubscribeTasks = onSnapshot(tasksRef, (snapshot) => {
-      const tasksData = snapshot.docs.map((document) => ({
-        id: document.id,
-        ...document.data(),
-      }))
+    const unsubscribeTasks = onSnapshot(
+      tasksRef,
+      (snapshot) => {
+        const tasksData = snapshot.docs.map((document) => ({
+          id: document.id,
+          ...document.data(),
+        }))
 
-      setTasks(tasksData)
-    })
+        setTasks(tasksData)
+      },
+      (error) => {
+        console.error(error)
+        setCalendarError('Errore durante il caricamento delle attività.')
+      }
+    )
 
     return () => {
       unsubscribeEvents()
@@ -283,12 +361,184 @@ function Calendar() {
     }
   }, [userId])
 
+  useEffect(() => {
+    if (!userId) return undefined
+
+    const publicEventsRef = collection(db, 'publicEvents')
+    const publicEventsQuery = query(publicEventsRef, orderBy('date', 'asc'))
+
+    const unsubscribePublicEvents = onSnapshot(
+      publicEventsQuery,
+      (snapshot) => {
+        const publicEventsData = snapshot.docs.map((document) => ({
+          id: document.id,
+          ...document.data(),
+        }))
+
+        setPublicEvents(publicEventsData)
+      },
+      (error) => {
+        console.error(error)
+      }
+    )
+
+    return () => {
+      unsubscribePublicEvents()
+    }
+  }, [userId])
+
+  const publicEventIds = useMemo(() => {
+    return new Set(publicEvents.map((eventItem) => eventItem.id))
+  }, [publicEvents])
+
+  function isPublicSourceMissing(eventItem) {
+    if (!eventItem.sourcePublicEventId) return false
+
+    return !publicEventIds.has(eventItem.sourcePublicEventId)
+  }
+
+  const unavailablePublicEvents = events.filter((eventItem) =>
+    isPublicSourceMissing(eventItem)
+  )
+
+  function refreshCalendarColors() {
+    setCalendarRenderVersion((previousVersion) => previousVersion + 1)
+  }
+
+  function setAllCalendarFilters() {
+    setCalendarFilters({
+      privateEvents: true,
+      publicEvents: true,
+      exploreEvents: true,
+      lowTasks: true,
+      mediumTasks: true,
+      highTasks: true,
+      holidays: true,
+    })
+
+    refreshCalendarColors()
+  }
+
+  function setNoCalendarFilters() {
+    setCalendarFilters({
+      privateEvents: false,
+      publicEvents: false,
+      exploreEvents: false,
+      lowTasks: false,
+      mediumTasks: false,
+      highTasks: false,
+      holidays: false,
+    })
+
+    refreshCalendarColors()
+  }
+
+  function toggleCalendarFilter(filterName) {
+    setCalendarFilters((previousFilters) => ({
+      ...previousFilters,
+      [filterName]: !previousFilters[filterName],
+    }))
+
+    refreshCalendarColors()
+  }
+
+  function areEventFiltersActive() {
+    return (
+      calendarFilters.privateEvents ||
+      calendarFilters.publicEvents ||
+      calendarFilters.exploreEvents
+    )
+  }
+
+  function areTaskFiltersActive() {
+    return (
+      calendarFilters.lowTasks ||
+      calendarFilters.mediumTasks ||
+      calendarFilters.highTasks
+    )
+  }
+
+  function areHolidayFiltersActive() {
+    return calendarFilters.holidays
+  }
+
+  function toggleEventGroup() {
+    const shouldActivate = !areEventFiltersActive()
+
+    setCalendarFilters((previousFilters) => ({
+      ...previousFilters,
+      privateEvents: shouldActivate,
+      publicEvents: shouldActivate,
+      exploreEvents: shouldActivate,
+    }))
+
+    refreshCalendarColors()
+  }
+
+  function toggleTaskGroup() {
+    const shouldActivate = !areTaskFiltersActive()
+
+    setCalendarFilters((previousFilters) => ({
+      ...previousFilters,
+      lowTasks: shouldActivate,
+      mediumTasks: shouldActivate,
+      highTasks: shouldActivate,
+    }))
+
+    refreshCalendarColors()
+  }
+
+  function toggleHolidayGroup() {
+    const shouldActivate = !areHolidayFiltersActive()
+
+    setCalendarFilters((previousFilters) => ({
+      ...previousFilters,
+      holidays: shouldActivate,
+    }))
+
+    refreshCalendarColors()
+  }
+
+  function shouldShowEvent(eventKind) {
+    if (eventKind === 'private') return calendarFilters.privateEvents
+    if (eventKind === 'public') return calendarFilters.publicEvents
+    if (eventKind === 'explore') return calendarFilters.exploreEvents
+    if (eventKind === 'unavailable') return areEventFiltersActive()
+
+    return true
+  }
+
+  function shouldShowTask(priority) {
+    if (priority === 'bassa') return calendarFilters.lowTasks
+    if (priority === 'alta') return calendarFilters.highTasks
+    return calendarFilters.mediumTasks
+  }
+
+  function getLegendPillClass(baseClass, isActive) {
+    return isActive
+      ? `${baseClass} legend-filter-pill active`
+      : `${baseClass} legend-filter-pill inactive`
+  }
+
   const calendarItems = useMemo(() => {
     const eventItems = events
       .filter((eventItem) => eventItem.date)
+      .filter((eventItem) => {
+        const publicSourceMissing = isPublicSourceMissing(eventItem)
+        const eventKind = publicSourceMissing
+          ? 'unavailable'
+          : getCalendarEventKind(eventItem, userId)
+
+        return shouldShowEvent(eventKind)
+      })
       .map((eventItem) => {
         const hasTime = Boolean(eventItem.time)
-        const eventKind = getCalendarEventKind(eventItem, userId)
+        const publicSourceMissing = isPublicSourceMissing(eventItem)
+
+        const eventKind = publicSourceMissing
+          ? 'unavailable'
+          : getCalendarEventKind(eventItem, userId)
+
         const eventColors = getCalendarEventColors(eventKind)
 
         return {
@@ -320,27 +570,44 @@ function Calendar() {
             sourcePublicEventId: eventItem.sourcePublicEventId || '',
             sourceOwnerId: eventItem.sourceOwnerId || '',
             calendarEventKind: eventKind,
+            publicSourceMissing,
           },
         }
       })
 
     const taskItems = tasks
       .filter((taskItem) => taskItem.dueDate)
+      .filter((taskItem) => {
+        const priority = taskItem.priority || 'media'
+        return shouldShowTask(priority)
+      })
       .map((taskItem) => {
         const priority = taskItem.priority || 'media'
+        const taskColors = getTaskPriorityColors(priority)
 
         return {
           id: `task-${taskItem.id}`,
           title: `Attività: ${taskItem.text}`,
           start: taskItem.dueDate,
           allDay: true,
+
           classNames: taskItem.completed
             ? [
                 'planify-calendar-task',
+                `planify-calendar-task-${priority}`,
                 getPriorityClass(priority),
                 'completed-calendar-task',
               ]
-            : ['planify-calendar-task', getPriorityClass(priority)],
+            : [
+                'planify-calendar-task',
+                `planify-calendar-task-${priority}`,
+                getPriorityClass(priority),
+              ],
+
+          backgroundColor: taskColors.backgroundColor,
+          borderColor: taskColors.borderColor,
+          textColor: taskColors.textColor,
+
           extendedProps: {
             type: 'task',
             originalId: taskItem.id,
@@ -348,6 +615,7 @@ function Calendar() {
             dueDate: taskItem.dueDate || '',
             priority,
             completed: Boolean(taskItem.completed),
+            calendarTaskPriority: priority,
           },
         }
       })
@@ -360,49 +628,57 @@ function Calendar() {
       currentYear + 2,
     ]
 
-    const holidayItems = holidayYears
-      .flatMap((year) => getItalianHolidaysForYear(year))
-      .map((holiday) => ({
-        id: holiday.id,
-        title: holiday.title,
-        start: holiday.date,
-        allDay: true,
-        editable: false,
-        startEditable: false,
-        durationEditable: false,
-        classNames: ['planify-calendar-holiday'],
-        backgroundColor: '#ffe4e6',
-        borderColor: '#e11d48',
-        textColor: '#9f1239',
-        extendedProps: {
-          type: 'holiday',
-          originalId: holiday.id,
-          title: holiday.title,
-          date: holiday.date,
-          description: holiday.description,
-          calendarEventKind: 'holiday',
-        },
-      }))
+    const holidayItems = calendarFilters.holidays
+      ? holidayYears
+          .flatMap((year) => getItalianHolidaysForYear(year))
+          .map((holiday) => {
+            const holidayColors = getHolidayColors()
+
+            return {
+              id: holiday.id,
+              title: holiday.title,
+              start: holiday.date,
+              allDay: true,
+              editable: false,
+              startEditable: false,
+              durationEditable: false,
+              classNames: ['planify-calendar-holiday'],
+              backgroundColor: holidayColors.backgroundColor,
+              borderColor: holidayColors.borderColor,
+              textColor: holidayColors.textColor,
+              extendedProps: {
+                type: 'holiday',
+                originalId: holiday.id,
+                title: holiday.title,
+                date: holiday.date,
+                description: holiday.description,
+                calendarEventKind: 'holiday',
+              },
+            }
+          })
+      : []
 
     return [...holidayItems, ...eventItems, ...taskItems]
-  }, [events, tasks, userId])
+  }, [events, tasks, userId, calendarFilters, publicEventIds])
 
   function handleEventDidMount(info) {
     const item = info.event.extendedProps
 
-    if (item.type !== 'event' && item.type !== 'holiday') return
-
     let colors = null
 
     if (item.type === 'holiday') {
-      colors = {
-        backgroundColor: '#ffe4e6',
-        borderColor: '#e11d48',
-        textColor: '#9f1239',
-      }
-    } else {
+      colors = getHolidayColors()
+    }
+
+    if (item.type === 'event') {
       colors = getCalendarEventColors(item.calendarEventKind)
     }
+
+    if (item.type === 'task') {
+      colors = getTaskPriorityColors(item.calendarTaskPriority)
+    }
+
+    if (!colors) return
 
     info.el.style.setProperty(
       'background-color',
@@ -430,7 +706,29 @@ function Calendar() {
     }
   }
 
+  function updateLocalEvent(eventId, updatedData) {
+    setEvents((previousEvents) =>
+      previousEvents.map((eventItem) =>
+        eventItem.id === eventId ? { ...eventItem, ...updatedData } : eventItem
+      )
+    )
+
+    refreshCalendarColors()
+  }
+
+  function removeLocalEvent(eventId) {
+    setEvents((previousEvents) =>
+      previousEvents.filter((eventItem) => eventItem.id !== eventId)
+    )
+
+    refreshCalendarColors()
+  }
+
   function getCurrentVisibility(item) {
+    if (item.publicSourceMissing) {
+      return 'private'
+    }
+
     if (item.sourcePublicEventId && item.sourceOwnerId === userId) {
       return 'public'
     }
@@ -508,6 +806,14 @@ function Calendar() {
       return
     }
 
+    if (item.publicSourceMissing) {
+      info.revert()
+      setCalendarError(
+        'Questo evento pubblico non è più disponibile. Gestiscilo dalla pagina Eventi.'
+      )
+      return
+    }
+
     if (!newStartDate) {
       info.revert()
       setCalendarError('Spostamento non valido.')
@@ -527,10 +833,17 @@ function Calendar() {
 
         const updatedEvent = {
           date: newDate,
+          updatedAt: serverTimestamp(),
+        }
+
+        const localUpdatedEvent = {
+          date: newDate,
         }
 
         if (!info.event.allDay && item.time) {
-          updatedEvent.time = formatTime(newStartDate)
+          const newTime = formatTime(newStartDate)
+          updatedEvent.time = newTime
+          localUpdatedEvent.time = newTime
         }
 
         batch.update(eventRef, updatedEvent)
@@ -547,7 +860,8 @@ function Calendar() {
 
         await batch.commit()
 
-        setCalendarMessage('Evento spostato correttamente.')
+        updateLocalEvent(item.originalId, localUpdatedEvent)
+
         return
       }
 
@@ -556,9 +870,18 @@ function Calendar() {
 
         await updateDoc(taskRef, {
           dueDate: newDate,
+          updatedAt: serverTimestamp(),
         })
 
-        setCalendarMessage('Attività spostata correttamente.')
+        setTasks((previousTasks) =>
+          previousTasks.map((taskItem) =>
+            taskItem.id === item.originalId
+              ? { ...taskItem, dueDate: newDate }
+              : taskItem
+          )
+        )
+
+        refreshCalendarColors()
       }
     } catch (error) {
       console.error(error)
@@ -577,7 +900,7 @@ function Calendar() {
   async function handleCreateEvent(event) {
     event.preventDefault()
 
-    if (!eventForm.title || !eventForm.date) {
+    if (!eventForm.title.trim() || !eventForm.date) {
       setPopupError('Inserisci almeno titolo e data.')
       return
     }
@@ -609,12 +932,16 @@ function Calendar() {
 
         batch.set(publicEventRef, {
           ...eventData,
+          visibility: 'public',
+          sourcePublicEventId: publicEventRef.id,
+          sourceOwnerId: userId,
           ownerId: userId,
           ownerName: userName,
           participantIds: [userId],
           participants: [participant],
           participantCount: 1,
           createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
         })
 
         batch.set(personalEventRef, {
@@ -623,12 +950,16 @@ function Calendar() {
           sourcePublicEventId: publicEventRef.id,
           sourceOwnerId: userId,
           createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
         })
       } else {
         batch.set(personalEventRef, {
           ...eventData,
           visibility: 'private',
+          sourcePublicEventId: '',
+          sourceOwnerId: '',
           createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
         })
       }
 
@@ -641,6 +972,7 @@ function Calendar() {
       )
 
       closePopup()
+      refreshCalendarColors()
     } catch (error) {
       console.error(error)
       setPopupError('Errore durante la creazione dell’evento.')
@@ -650,29 +982,36 @@ function Calendar() {
   async function handleCreateTask(event) {
     event.preventDefault()
 
-    if (!taskForm.text || !taskForm.dueDate) {
+    if (!taskForm.text.trim() || !taskForm.dueDate) {
       setPopupError('Inserisci almeno nome attività e scadenza.')
       return
     }
 
-    const tasksRef = collection(db, 'users', userId, 'tasks')
+    try {
+      const tasksRef = collection(db, 'users', userId, 'tasks')
 
-    await addDoc(tasksRef, {
-      text: taskForm.text,
-      dueDate: taskForm.dueDate,
-      priority: taskForm.priority,
-      completed: taskForm.completed,
-      createdAt: serverTimestamp(),
-    })
+      await addDoc(tasksRef, {
+        text: taskForm.text.trim(),
+        dueDate: taskForm.dueDate,
+        priority: taskForm.priority,
+        completed: taskForm.completed,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      })
 
-    setCalendarMessage('Attività creata correttamente.')
-    closePopup()
+      setCalendarMessage('Attività creata correttamente.')
+      closePopup()
+      refreshCalendarColors()
+    } catch (error) {
+      console.error(error)
+      setPopupError('Errore durante la creazione dell’attività.')
+    }
   }
 
   async function handleUpdateEvent(event) {
     event.preventDefault()
 
-    if (!eventForm.title || !eventForm.date) {
+    if (!eventForm.title.trim() || !eventForm.date) {
       setPopupError('Inserisci almeno titolo e data.')
       return
     }
@@ -695,8 +1034,13 @@ function Calendar() {
       joinedAt: new Date().toISOString(),
     }
 
+    const isUnavailablePublicEvent =
+      selectedItem.sourcePublicEventId && selectedItem.publicSourceMissing
+
     const isOwnedPublicEvent =
-      selectedItem.sourcePublicEventId && selectedItem.sourceOwnerId === userId
+      selectedItem.sourcePublicEventId &&
+      selectedItem.sourceOwnerId === userId &&
+      !selectedItem.publicSourceMissing
 
     const isCopiedPublicEvent =
       selectedItem.sourcePublicEventId && selectedItem.sourceOwnerId !== userId
@@ -712,14 +1056,24 @@ function Calendar() {
         selectedItem.originalId
       )
 
-      if (isCopiedPublicEvent) {
+      if (isCopiedPublicEvent || isUnavailablePublicEvent) {
         batch.update(eventRef, {
           ...eventData,
+          updatedAt: serverTimestamp(),
         })
 
         await batch.commit()
 
-        setCalendarMessage('Copia personale aggiornata correttamente.')
+        updateLocalEvent(selectedItem.originalId, {
+          ...eventData,
+        })
+
+        setCalendarMessage(
+          isUnavailablePublicEvent
+            ? 'Copia personale aggiornata. L’evento pubblico originale non è più disponibile.'
+            : 'Copia personale aggiornata correttamente.'
+        )
+
         closePopup()
         return
       }
@@ -732,32 +1086,70 @@ function Calendar() {
             selectedItem.sourcePublicEventId
           )
 
-          batch.update(eventRef, {
+          const personalUpdate = {
             ...eventData,
             visibility: 'public',
-          })
+            sourcePublicEventId: selectedItem.sourcePublicEventId,
+            sourceOwnerId: userId,
+            updatedAt: serverTimestamp(),
+          }
 
-          batch.update(publicEventRef, {
+          const publicUpdate = {
             ...eventData,
+            visibility: 'public',
+            sourcePublicEventId: selectedItem.sourcePublicEventId,
+            sourceOwnerId: userId,
+            ownerId: userId,
+            ownerName: userName,
+            updatedAt: serverTimestamp(),
+          }
+
+          batch.update(eventRef, personalUpdate)
+          batch.update(publicEventRef, publicUpdate)
+
+          await batch.commit()
+
+          updateLocalEvent(selectedItem.originalId, {
+            ...eventData,
+            visibility: 'public',
+            sourcePublicEventId: selectedItem.sourcePublicEventId,
+            sourceOwnerId: userId,
           })
         } else {
           const publicEventRef = doc(collection(db, 'publicEvents'))
 
-          batch.update(eventRef, {
+          const personalUpdate = {
             ...eventData,
             visibility: 'public',
             sourcePublicEventId: publicEventRef.id,
             sourceOwnerId: userId,
-          })
+            updatedAt: serverTimestamp(),
+          }
 
-          batch.set(publicEventRef, {
+          const publicCreate = {
             ...eventData,
+            visibility: 'public',
+            sourcePublicEventId: publicEventRef.id,
+            sourceOwnerId: userId,
             ownerId: userId,
             ownerName: userName,
             participantIds: [userId],
             participants: [participant],
             participantCount: 1,
             createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+          }
+
+          batch.update(eventRef, personalUpdate)
+          batch.set(publicEventRef, publicCreate)
+
+          await batch.commit()
+
+          updateLocalEvent(selectedItem.originalId, {
+            ...eventData,
+            visibility: 'public',
+            sourcePublicEventId: publicEventRef.id,
+            sourceOwnerId: userId,
           })
         }
       } else {
@@ -787,16 +1179,39 @@ function Calendar() {
             }
           }
 
-          batch.update(eventRef, {
+          const privateUpdate = {
+            ...eventData,
+            visibility: 'private',
+            sourcePublicEventId: '',
+            sourceOwnerId: '',
+            updatedAt: serverTimestamp(),
+          }
+
+          batch.update(eventRef, privateUpdate)
+          batch.delete(publicEventRef)
+
+          await batch.commit()
+
+          updateLocalEvent(selectedItem.originalId, {
             ...eventData,
             visibility: 'private',
             sourcePublicEventId: '',
             sourceOwnerId: '',
           })
-
-          batch.delete(publicEventRef)
         } else {
-          batch.update(eventRef, {
+          const privateUpdate = {
+            ...eventData,
+            visibility: 'private',
+            sourcePublicEventId: '',
+            sourceOwnerId: '',
+            updatedAt: serverTimestamp(),
+          }
+
+          batch.update(eventRef, privateUpdate)
+
+          await batch.commit()
+
+          updateLocalEvent(selectedItem.originalId, {
             ...eventData,
             visibility: 'private',
             sourcePublicEventId: '',
@@ -804,8 +1219,6 @@ function Calendar() {
           })
         }
       }
-
-      await batch.commit()
 
       setCalendarMessage('Evento aggiornato correttamente.')
       closePopup()
@@ -818,28 +1231,50 @@ function Calendar() {
   async function handleUpdateTask(event) {
     event.preventDefault()
 
-    if (!taskForm.text || !taskForm.dueDate) {
+    if (!taskForm.text.trim() || !taskForm.dueDate) {
       setPopupError('Inserisci almeno nome attività e scadenza.')
       return
     }
 
-    const taskRef = doc(db, 'users', userId, 'tasks', selectedItem.originalId)
+    try {
+      const taskRef = doc(db, 'users', userId, 'tasks', selectedItem.originalId)
 
-    await updateDoc(taskRef, {
-      text: taskForm.text,
-      dueDate: taskForm.dueDate,
-      priority: taskForm.priority,
-      completed: taskForm.completed,
-    })
+      await updateDoc(taskRef, {
+        text: taskForm.text.trim(),
+        dueDate: taskForm.dueDate,
+        priority: taskForm.priority,
+        completed: taskForm.completed,
+        updatedAt: serverTimestamp(),
+      })
 
-    closePopup()
+      setTasks((previousTasks) =>
+        previousTasks.map((taskItem) =>
+          taskItem.id === selectedItem.originalId
+            ? {
+                ...taskItem,
+                text: taskForm.text.trim(),
+                dueDate: taskForm.dueDate,
+                priority: taskForm.priority,
+                completed: taskForm.completed,
+              }
+            : taskItem
+        )
+      )
+
+      setCalendarMessage('Attività aggiornata correttamente.')
+      closePopup()
+      refreshCalendarColors()
+    } catch (error) {
+      console.error(error)
+      setPopupError('Errore durante l’aggiornamento dell’attività.')
+    }
   }
 
   async function handleDeleteSelectedItem() {
     if (!selectedItem) return
 
     if (selectedItem.type === 'holiday') {
-      setPopupError('Le festività automatiche non possono essere eliminate.')
+      setPopupError('Le festività non possono essere eliminate.')
       return
     }
 
@@ -892,6 +1327,7 @@ function Calendar() {
               const updateData = {
                 participantIds: arrayRemove(userId),
                 participantCount: Math.max(participantCount - 1, 0),
+                updatedAt: serverTimestamp(),
               }
 
               if (participantToRemove) {
@@ -906,6 +1342,8 @@ function Calendar() {
         batch.delete(eventRef)
 
         await batch.commit()
+
+        removeLocalEvent(selectedItem.originalId)
 
         setCalendarMessage(
           removedOnlyPersonalCopy
@@ -928,8 +1366,15 @@ function Calendar() {
 
         await deleteDoc(taskRef)
 
+        setTasks((previousTasks) =>
+          previousTasks.filter(
+            (taskItem) => taskItem.id !== selectedItem.originalId
+          )
+        )
+
         setCalendarMessage('Attività eliminata.')
         closePopup()
+        refreshCalendarColors()
       }
     } catch (error) {
       console.error(error)
@@ -940,7 +1385,13 @@ function Calendar() {
   const isEditingCopiedPublicEvent =
     selectedItem?.type === 'event' &&
     selectedItem?.sourcePublicEventId &&
-    selectedItem?.sourceOwnerId !== userId
+    selectedItem?.sourceOwnerId !== userId &&
+    !selectedItem?.publicSourceMissing
+
+  const isEditingUnavailablePublicEvent =
+    selectedItem?.type === 'event' &&
+    selectedItem?.sourcePublicEventId &&
+    selectedItem?.publicSourceMissing
 
   return (
     <main className="dashboard-page">
@@ -969,8 +1420,26 @@ function Calendar() {
           <p className="calendar-feedback error-feedback">{calendarError}</p>
         )}
 
+        {unavailablePublicEvents.length > 0 && (
+          <div className="calendar-public-warning">
+            <div>
+              <strong>Ci sono eventi pubblici non più disponibili</strong>
+              <p>
+                Alcuni eventi aggiunti da Esplora sono stati rimossi dal
+                creatore. Apri la pagina Eventi per mantenerli come copie
+                personali oppure rimuoverli dal calendario.
+              </p>
+            </div>
+
+            <Link to="/events" className="btn btn-secondary">
+              Gestisci in Eventi
+            </Link>
+          </div>
+        )}
+
         <div className="fullcalendar-card">
           <FullCalendar
+            key={calendarRenderVersion}
             plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
             initialView="dayGridMonth"
             locale={itLocale}
@@ -984,6 +1453,10 @@ function Calendar() {
             editable={true}
             eventStartEditable={true}
             eventDurationEditable={false}
+            fixedMirrorParent={
+              typeof document !== 'undefined' ? document.body : undefined
+            }
+            dragRevertDuration={180}
             nowIndicator={true}
             dayMaxEvents={3}
             allDayText="Giornata"
@@ -1001,52 +1474,233 @@ function Calendar() {
           />
         </div>
 
-        <div className="calendar-legend improved-calendar-legend">
-          <div className="legend-group">
-            <span className="legend-title">Tipologia</span>
+        <div className="calendar-legend improved-calendar-legend clearer-calendar-legend selectable-calendar-legend">
+          <div className="calendar-legend-header">
+            <div>
+              <span className="legend-title">Legenda calendario</span>
+              <p>
+                Clicca sulle singole voci per mostrarle o nasconderle. Clicca
+                sul riquadro della categoria per attivare o disattivare tutto il
+                gruppo.
+              </p>
+            </div>
 
-            <span className="legend-pill event-legend-pill">
-              <strong className="legend-dot private-event-dot"></strong>
-              Privato
-            </span>
+            <div className="calendar-legend-actions">
+              <button
+                type="button"
+                className="calendar-legend-action-button"
+                onClick={setAllCalendarFilters}
+              >
+                Mostra tutto
+              </button>
 
-            <span className="legend-pill event-legend-pill">
-              <strong className="legend-dot public-event-dot"></strong>
-              Pubblico
-            </span>
-
-            <span className="legend-pill event-legend-pill">
-              <strong className="legend-dot explore-event-dot"></strong>
-              Da Esplora
-            </span>
-
-            <span className="legend-pill holiday-legend-pill">
-              <strong className="legend-dot holiday-dot"></strong>
-              Festività
-            </span>
+              <button
+                type="button"
+                className="calendar-legend-action-button danger"
+                onClick={setNoCalendarFilters}
+              >
+                Nascondi tutto
+              </button>
+            </div>
           </div>
 
-          <div className="legend-divider"></div>
+          <div className="calendar-legend-content">
+            <button
+              type="button"
+              className={
+                areEventFiltersActive()
+                  ? 'legend-group legend-events-group legend-toggle-group active'
+                  : 'legend-group legend-events-group legend-toggle-group inactive'
+              }
+              onClick={toggleEventGroup}
+            >
+              <span className="legend-title">Eventi</span>
 
-          <div className="legend-group">
-            <span className="legend-title">Priorità attività</span>
+              <span
+                role="button"
+                tabIndex={0}
+                className={getLegendPillClass(
+                  'legend-pill event-legend-pill',
+                  calendarFilters.privateEvents
+                )}
+                onClick={(event) => {
+                  event.stopPropagation()
+                  toggleCalendarFilter('privateEvents')
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') {
+                    event.stopPropagation()
+                    toggleCalendarFilter('privateEvents')
+                  }
+                }}
+              >
+                <strong className="legend-dot private-event-dot"></strong>
+                Privato
+              </span>
 
-            <span className="legend-pill low-legend-pill">
-              <strong className="legend-dot priority-low-dot"></strong>
-              Bassa
-            </span>
+              <span
+                role="button"
+                tabIndex={0}
+                className={getLegendPillClass(
+                  'legend-pill event-legend-pill',
+                  calendarFilters.publicEvents
+                )}
+                onClick={(event) => {
+                  event.stopPropagation()
+                  toggleCalendarFilter('publicEvents')
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') {
+                    event.stopPropagation()
+                    toggleCalendarFilter('publicEvents')
+                  }
+                }}
+              >
+                <strong className="legend-dot public-event-dot"></strong>
+                Pubblico
+              </span>
 
-            <span className="legend-pill medium-legend-pill">
-              <strong className="legend-dot priority-medium-dot"></strong>
-              Media
-            </span>
+              <span
+                role="button"
+                tabIndex={0}
+                className={getLegendPillClass(
+                  'legend-pill event-legend-pill',
+                  calendarFilters.exploreEvents
+                )}
+                onClick={(event) => {
+                  event.stopPropagation()
+                  toggleCalendarFilter('exploreEvents')
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') {
+                    event.stopPropagation()
+                    toggleCalendarFilter('exploreEvents')
+                  }
+                }}
+              >
+                <strong className="legend-dot explore-event-dot"></strong>
+                Da Esplora
+              </span>
+            </button>
 
-            <span className="legend-pill high-legend-pill">
-              <strong className="legend-dot priority-high-dot"></strong>
-              Alta
-            </span>
+            <button
+              type="button"
+              className={
+                areTaskFiltersActive()
+                  ? 'legend-group legend-tasks-group legend-toggle-group active'
+                  : 'legend-group legend-tasks-group legend-toggle-group inactive'
+              }
+              onClick={toggleTaskGroup}
+            >
+              <span className="legend-title">Attività</span>
+
+              <span
+                role="button"
+                tabIndex={0}
+                className={getLegendPillClass(
+                  'legend-pill task-legend-pill task-low-legend-pill',
+                  calendarFilters.lowTasks
+                )}
+                onClick={(event) => {
+                  event.stopPropagation()
+                  toggleCalendarFilter('lowTasks')
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') {
+                    event.stopPropagation()
+                    toggleCalendarFilter('lowTasks')
+                  }
+                }}
+              >
+                <strong className="legend-dot priority-low-dot"></strong>
+                Bassa
+              </span>
+
+              <span
+                role="button"
+                tabIndex={0}
+                className={getLegendPillClass(
+                  'legend-pill task-legend-pill task-medium-legend-pill',
+                  calendarFilters.mediumTasks
+                )}
+                onClick={(event) => {
+                  event.stopPropagation()
+                  toggleCalendarFilter('mediumTasks')
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') {
+                    event.stopPropagation()
+                    toggleCalendarFilter('mediumTasks')
+                  }
+                }}
+              >
+                <strong className="legend-dot priority-medium-dot"></strong>
+                Media
+              </span>
+
+              <span
+                role="button"
+                tabIndex={0}
+                className={getLegendPillClass(
+                  'legend-pill task-legend-pill task-high-legend-pill',
+                  calendarFilters.highTasks
+                )}
+                onClick={(event) => {
+                  event.stopPropagation()
+                  toggleCalendarFilter('highTasks')
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') {
+                    event.stopPropagation()
+                    toggleCalendarFilter('highTasks')
+                  }
+                }}
+              >
+                <strong className="legend-dot priority-high-dot"></strong>
+                Alta
+              </span>
+            </button>
+
+            <button
+              type="button"
+              className={
+                areHolidayFiltersActive()
+                  ? 'legend-group legend-holidays-group legend-toggle-group active'
+                  : 'legend-group legend-holidays-group legend-toggle-group inactive'
+              }
+              onClick={toggleHolidayGroup}
+            >
+              <span className="legend-title">Festività</span>
+
+              <span
+                role="button"
+                tabIndex={0}
+                className={getLegendPillClass(
+                  'legend-pill holiday-legend-pill',
+                  calendarFilters.holidays
+                )}
+                onClick={(event) => {
+                  event.stopPropagation()
+                  toggleCalendarFilter('holidays')
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') {
+                    event.stopPropagation()
+                    toggleCalendarFilter('holidays')
+                  }
+                }}
+              >
+                <strong className="legend-dot holiday-dot"></strong>
+                Festività italiana
+              </span>
+            </button>
           </div>
         </div>
+
+        <p className="calendar-legend-note">
+          Nota: gli eventi indicano la visibilità, mentre le attività indicano la
+          priorità della scadenza.
+        </p>
       </section>
 
       {(selectedItem || isCreating) && (
@@ -1070,7 +1724,11 @@ function Calendar() {
                     </h2>
                   </div>
 
-                  <button className="popup-close-button" onClick={closePopup}>
+                  <button
+                    type="button"
+                    className="popup-close-button"
+                    onClick={closePopup}
+                  >
                     ×
                   </button>
                 </div>
@@ -1333,11 +1991,15 @@ function Calendar() {
                             )}`
                           : selectedItem.type === 'holiday'
                             ? 'calendar-popup-badge holiday-popup-badge'
-                            : 'calendar-popup-badge'
+                            : selectedItem.publicSourceMissing
+                              ? 'calendar-popup-badge unavailable'
+                              : 'calendar-popup-badge'
                       }
                     >
                       {selectedItem.type === 'event'
-                        ? 'Evento'
+                        ? selectedItem.publicSourceMissing
+                          ? 'Evento non più pubblico'
+                          : 'Evento'
                         : selectedItem.type === 'holiday'
                           ? 'Festività'
                           : `Attività · Priorità ${getPriorityLabel(
@@ -1354,7 +2016,11 @@ function Calendar() {
                     </h2>
                   </div>
 
-                  <button className="popup-close-button" onClick={closePopup}>
+                  <button
+                    type="button"
+                    className="popup-close-button"
+                    onClick={closePopup}
+                  >
                     ×
                   </button>
                 </div>
@@ -1379,7 +2045,7 @@ function Calendar() {
                       </p>
 
                       <p className="holiday-popup-note">
-                        Questa festività è inserita automaticamente e non può
+                        Questa festività è inserita dal calendario e non può
                         essere modificata o eliminata.
                       </p>
                     </div>
@@ -1399,15 +2065,31 @@ function Calendar() {
                 {!isEditing && selectedItem.type === 'event' && (
                   <>
                     <div className="calendar-popup-content">
+                      {selectedItem.publicSourceMissing && (
+                        <div className="event-unavailable-box">
+                          <strong>Evento pubblico non più disponibile</strong>
+                          <p>
+                            L’evento originale è stato rimosso da Esplora. Apri
+                            la pagina Eventi per mantenerlo come copia personale
+                            oppure rimuoverlo dal calendario.
+                          </p>
+                        </div>
+                      )}
+
                       <p>
                         <strong>Visibilità:</strong>{' '}
                         <span
                           className={`event-visibility-pill ${getEventVisibilityClass(
                             selectedItem,
-                            userId
+                            userId,
+                            selectedItem.publicSourceMissing
                           )}`}
                         >
-                          {getEventVisibilityLabel(selectedItem, userId)}
+                          {getEventVisibilityLabel(
+                            selectedItem,
+                            userId,
+                            selectedItem.publicSourceMissing
+                          )}
                         </span>
                       </p>
 
@@ -1437,7 +2119,9 @@ function Calendar() {
                         className="btn btn-danger"
                         onClick={handleDeleteSelectedItem}
                       >
-                        Elimina
+                        {selectedItem.publicSourceMissing
+                          ? 'Rimuovi dal calendario'
+                          : 'Elimina'}
                       </button>
 
                       <button
@@ -1585,7 +2269,16 @@ function Calendar() {
                       />
                     </label>
 
-                    {isEditingCopiedPublicEvent ? (
+                    {isEditingUnavailablePublicEvent ? (
+                      <div className="event-visibility-info unavailable">
+                        <strong>Evento pubblico non più disponibile</strong>
+                        <p>
+                          L’evento originale è stato rimosso da Esplora. Puoi
+                          modificare questa copia personale oppure gestirla dalla
+                          pagina Eventi.
+                        </p>
+                      </div>
+                    ) : isEditingCopiedPublicEvent ? (
                       <div className="event-visibility-info">
                         <strong>Evento aggiunto da Esplora eventi</strong>
                         <p>

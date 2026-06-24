@@ -3,7 +3,6 @@ import { Link } from 'react-router'
 import {
   arrayRemove,
   collection,
-  deleteDoc,
   doc,
   getDoc,
   onSnapshot,
@@ -43,7 +42,11 @@ function formatDateLabel(dateKey) {
   })
 }
 
-function getEventVisibilityLabel(eventItem, userId) {
+function getEventVisibilityLabel(eventItem, userId, isPublicSourceMissing) {
+  if (isPublicSourceMissing) {
+    return 'Non più pubblico'
+  }
+
   if (eventItem.sourcePublicEventId && eventItem.sourceOwnerId === userId) {
     return 'Pubblico'
   }
@@ -55,7 +58,11 @@ function getEventVisibilityLabel(eventItem, userId) {
   return 'Privato'
 }
 
-function getEventVisibilityClass(eventItem, userId) {
+function getEventVisibilityClass(eventItem, userId, isPublicSourceMissing) {
+  if (isPublicSourceMissing) {
+    return 'unavailable'
+  }
+
   if (eventItem.sourcePublicEventId && eventItem.sourceOwnerId === userId) {
     return 'public'
   }
@@ -71,9 +78,10 @@ function Events() {
   const { user } = useAuth()
 
   const userId = user?.uid || ''
-  const userName = user?.displayName || 'Utente Planify'
+  const userName = user?.displayName || user?.email || 'Utente Planify'
 
   const [events, setEvents] = useState([])
+  const [publicEvents, setPublicEvents] = useState([])
 
   const [title, setTitle] = useState('')
   const [date, setDate] = useState('')
@@ -97,27 +105,72 @@ function Events() {
   const [reminderError, setReminderError] = useState('')
 
   useEffect(() => {
-    if (!userId) return
+    if (!userId) return undefined
 
     const eventsRef = collection(db, 'users', userId, 'events')
     const eventsQuery = query(eventsRef, orderBy('date', 'asc'))
 
-    const unsubscribe = onSnapshot(eventsQuery, (snapshot) => {
-      const eventsData = snapshot.docs.map((document) => ({
-        id: document.id,
-        ...document.data(),
-      }))
+    const unsubscribe = onSnapshot(
+      eventsQuery,
+      (snapshot) => {
+        const eventsData = snapshot.docs.map((document) => ({
+          id: document.id,
+          ...document.data(),
+        }))
 
-      setEvents(eventsData)
-    })
+        setEvents(eventsData)
+      },
+      (snapshotError) => {
+        console.error(snapshotError)
+        setError('Errore durante il caricamento degli eventi.')
+      }
+    )
+
+    return () => unsubscribe()
+  }, [userId])
+
+  useEffect(() => {
+    if (!userId) return undefined
+
+    const publicEventsRef = collection(db, 'publicEvents')
+    const publicEventsQuery = query(publicEventsRef, orderBy('date', 'asc'))
+
+    const unsubscribe = onSnapshot(
+      publicEventsQuery,
+      (snapshot) => {
+        const publicEventsData = snapshot.docs.map((document) => ({
+          id: document.id,
+          ...document.data(),
+        }))
+
+        setPublicEvents(publicEventsData)
+      },
+      (snapshotError) => {
+        console.error(snapshotError)
+      }
+    )
 
     return () => unsubscribe()
   }, [userId])
 
   const today = getTodayDateKey()
 
+  const publicEventIds = useMemo(() => {
+    return new Set(publicEvents.map((eventItem) => eventItem.id))
+  }, [publicEvents])
+
+  function isPublicSourceMissing(eventItem) {
+    if (!eventItem.sourcePublicEventId) return false
+
+    return !publicEventIds.has(eventItem.sourcePublicEventId)
+  }
+
   const futureEvents = events.filter((eventItem) => eventItem.date >= today)
   const pastEvents = events.filter((eventItem) => eventItem.date < today)
+
+  const unavailablePublicEvents = events.filter((eventItem) =>
+    isPublicSourceMissing(eventItem)
+  )
 
   const visibleEvents = useMemo(() => {
     return events
@@ -127,8 +180,13 @@ function Events() {
         return true
       })
       .sort((firstEvent, secondEvent) => {
-        const firstDate = `${firstEvent.date}T${firstEvent.time || '00:00'}`
-        const secondDate = `${secondEvent.date}T${secondEvent.time || '00:00'}`
+        const firstDate = `${firstEvent.date || '9999-12-31'}T${
+          firstEvent.time || '00:00'
+        }`
+
+        const secondDate = `${secondEvent.date || '9999-12-31'}T${
+          secondEvent.time || '00:00'
+        }`
 
         return firstDate.localeCompare(secondDate)
       })
@@ -138,6 +196,10 @@ function Events() {
 
   const isEditingCopiedPublicEvent = Boolean(
     editingEvent?.sourcePublicEventId && editingEvent?.sourceOwnerId !== userId
+  )
+
+  const isEditingUnavailablePublicEvent = Boolean(
+    editingEvent && isPublicSourceMissing(editingEvent)
   )
 
   function resetForm() {
@@ -214,21 +276,27 @@ function Events() {
 
       if (editEventId) {
         const eventRef = doc(db, 'users', userId, 'events', editEventId)
+
         const eventToEdit = events.find(
           (eventItem) => eventItem.id === editEventId
         )
 
         const isOwnedPublicEvent =
           eventToEdit?.sourcePublicEventId &&
-          eventToEdit?.sourceOwnerId === userId
+          eventToEdit?.sourceOwnerId === userId &&
+          !isPublicSourceMissing(eventToEdit)
 
         const isCopiedPublicEvent =
           eventToEdit?.sourcePublicEventId &&
           eventToEdit?.sourceOwnerId !== userId
 
-        if (isCopiedPublicEvent) {
+        const isUnavailablePublicEvent =
+          eventToEdit && isPublicSourceMissing(eventToEdit)
+
+        if (isCopiedPublicEvent || isUnavailablePublicEvent) {
           batch.update(eventRef, {
             ...eventData,
+            updatedAt: serverTimestamp(),
           })
 
           await batch.commit()
@@ -236,7 +304,12 @@ function Events() {
           clearEventWeather(editEventId)
           clearEventReminder(editEventId)
 
-          setMessage('Copia personale aggiornata correttamente.')
+          setMessage(
+            isUnavailablePublicEvent
+              ? 'Copia personale aggiornata. L’evento pubblico originale non è più disponibile.'
+              : 'Copia personale aggiornata correttamente.'
+          )
+
           resetForm()
           return
         }
@@ -252,10 +325,19 @@ function Events() {
             batch.update(eventRef, {
               ...eventData,
               visibility: 'public',
+              sourcePublicEventId: eventToEdit.sourcePublicEventId,
+              sourceOwnerId: userId,
+              updatedAt: serverTimestamp(),
             })
 
             batch.update(publicEventRef, {
               ...eventData,
+              visibility: 'public',
+              sourcePublicEventId: eventToEdit.sourcePublicEventId,
+              sourceOwnerId: userId,
+              ownerId: userId,
+              ownerName: userName,
+              updatedAt: serverTimestamp(),
             })
           } else {
             const publicEventRef = doc(collection(db, 'publicEvents'))
@@ -265,16 +347,21 @@ function Events() {
               visibility: 'public',
               sourcePublicEventId: publicEventRef.id,
               sourceOwnerId: userId,
+              updatedAt: serverTimestamp(),
             })
 
             batch.set(publicEventRef, {
               ...eventData,
+              visibility: 'public',
+              sourcePublicEventId: publicEventRef.id,
+              sourceOwnerId: userId,
               ownerId: userId,
               ownerName: userName,
               participantIds: [userId],
               participants: [participant],
               participantCount: 1,
               createdAt: serverTimestamp(),
+              updatedAt: serverTimestamp(),
             })
           }
         } else {
@@ -302,6 +389,8 @@ function Events() {
                 )
                 return
               }
+
+              batch.delete(publicEventRef)
             }
 
             batch.update(eventRef, {
@@ -309,15 +398,15 @@ function Events() {
               visibility: 'private',
               sourcePublicEventId: '',
               sourceOwnerId: '',
+              updatedAt: serverTimestamp(),
             })
-
-            batch.delete(publicEventRef)
           } else {
             batch.update(eventRef, {
               ...eventData,
               visibility: 'private',
               sourcePublicEventId: '',
               sourceOwnerId: '',
+              updatedAt: serverTimestamp(),
             })
           }
         }
@@ -339,12 +428,16 @@ function Events() {
 
         batch.set(publicEventRef, {
           ...eventData,
+          visibility: 'public',
+          sourcePublicEventId: publicEventRef.id,
+          sourceOwnerId: userId,
           ownerId: userId,
           ownerName: userName,
           participantIds: [userId],
           participants: [participant],
           participantCount: 1,
           createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
         })
 
         batch.set(personalEventRef, {
@@ -353,12 +446,16 @@ function Events() {
           sourcePublicEventId: publicEventRef.id,
           sourceOwnerId: userId,
           createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
         })
       } else {
         batch.set(personalEventRef, {
           ...eventData,
           visibility: 'private',
+          sourcePublicEventId: '',
+          sourceOwnerId: '',
           createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
         })
       }
 
@@ -371,8 +468,8 @@ function Events() {
       )
 
       resetForm()
-    } catch (error) {
-      console.error(error)
+    } catch (saveError) {
+      console.error(saveError)
       setError('Errore durante il salvataggio dell’evento.')
     }
   }
@@ -385,7 +482,11 @@ function Events() {
     setLocation(eventItem.location || '')
     setDescription(eventItem.description || '')
 
-    if (eventItem.sourcePublicEventId && eventItem.sourceOwnerId === userId) {
+    if (
+      eventItem.sourcePublicEventId &&
+      eventItem.sourceOwnerId === userId &&
+      !isPublicSourceMissing(eventItem)
+    ) {
       setVisibility('public')
     } else {
       setVisibility(eventItem.visibility || 'private')
@@ -397,11 +498,57 @@ function Events() {
     setReminderError('')
   }
 
+  async function handleKeepPersonalCopy(eventId) {
+    const eventToKeep = events.find((eventItem) => eventItem.id === eventId)
+
+    setError('')
+    setMessage('')
+
+    if (!userId) {
+      setError('Devi essere autenticato per mantenere una copia personale.')
+      return
+    }
+
+    if (!eventToKeep) {
+      setError('Evento non trovato.')
+      return
+    }
+
+    try {
+      const batch = writeBatch(db)
+
+      const personalEventRef = doc(db, 'users', userId, 'events', eventId)
+
+      batch.update(personalEventRef, {
+        visibility: 'private',
+        sourcePublicEventId: '',
+        sourceOwnerId: '',
+        updatedAt: serverTimestamp(),
+      })
+
+      await batch.commit()
+
+      if (editEventId === eventId) {
+        resetForm()
+      }
+
+      setMessage('Evento mantenuto come copia personale privata.')
+    } catch (copyError) {
+      console.error(copyError)
+      setError('Errore durante il salvataggio della copia personale.')
+    }
+  }
+
   async function handleDeleteEvent(eventId) {
     const eventToDelete = events.find((eventItem) => eventItem.id === eventId)
 
     setError('')
     setMessage('')
+
+    if (!userId) {
+      setError('Devi essere autenticato per eliminare un evento.')
+      return
+    }
 
     try {
       const batch = writeBatch(db)
@@ -414,35 +561,36 @@ function Events() {
           eventToDelete.sourcePublicEventId
         )
 
+        const publicEventSnapshot = await getDoc(publicEventRef)
+
         if (eventToDelete.sourceOwnerId === userId) {
-          batch.delete(publicEventRef)
-        } else {
-          const publicEventSnapshot = await getDoc(publicEventRef)
-
           if (publicEventSnapshot.exists()) {
-            const publicEventData = publicEventSnapshot.data()
-
-            const participantToRemove = publicEventData.participants?.find(
-              (participantItem) => participantItem.uid === userId
-            )
-
-            const participantCount =
-              publicEventData.participantCount ||
-              publicEventData.participantIds?.length ||
-              publicEventData.participants?.length ||
-              0
-
-            const updateData = {
-              participantIds: arrayRemove(userId),
-              participantCount: Math.max(participantCount - 1, 0),
-            }
-
-            if (participantToRemove) {
-              updateData.participants = arrayRemove(participantToRemove)
-            }
-
-            batch.update(publicEventRef, updateData)
+            batch.delete(publicEventRef)
           }
+        } else if (publicEventSnapshot.exists()) {
+          const publicEventData = publicEventSnapshot.data()
+
+          const participantToRemove = publicEventData.participants?.find(
+            (participantItem) => participantItem.uid === userId
+          )
+
+          const participantCount =
+            publicEventData.participantCount ||
+            publicEventData.participantIds?.length ||
+            publicEventData.participants?.length ||
+            0
+
+          const updateData = {
+            participantIds: arrayRemove(userId),
+            participantCount: Math.max(participantCount - 1, 0),
+            updatedAt: serverTimestamp(),
+          }
+
+          if (participantToRemove) {
+            updateData.participants = arrayRemove(participantToRemove)
+          }
+
+          batch.update(publicEventRef, updateData)
         }
       }
 
@@ -463,13 +611,20 @@ function Events() {
           ? 'Evento rimosso dal tuo calendario e partecipazione annullata.'
           : 'Evento eliminato.'
       )
-    } catch (error) {
-      console.error(error)
+    } catch (deleteError) {
+      console.error(deleteError)
       setError('Errore durante l’eliminazione dell’evento.')
     }
   }
 
   async function handleShowWeather(eventItem) {
+    if (isPublicSourceMissing(eventItem)) {
+      setWeatherError(
+        'Questo evento pubblico non è più disponibile. Puoi mantenerlo come copia personale oppure rimuoverlo dal calendario.'
+      )
+      return
+    }
+
     if (!eventItem.location) {
       setWeatherError('Inserisci un luogo per vedere il meteo.')
       return
@@ -496,8 +651,8 @@ function Events() {
         ...previousWeather,
         [eventItem.id]: weather,
       }))
-    } catch (error) {
-      console.error(error)
+    } catch (weatherRequestError) {
+      console.error(weatherRequestError)
       setWeatherError('Meteo non disponibile per questo luogo, data o ora.')
     } finally {
       setWeatherLoading('')
@@ -507,6 +662,13 @@ function Events() {
   async function handleScheduleReminder(eventItem) {
     setReminderError('')
     setMessage('')
+
+    if (isPublicSourceMissing(eventItem)) {
+      setReminderError(
+        'Questo evento pubblico non è più disponibile. Puoi mantenerlo come copia personale oppure rimuoverlo dal calendario.'
+      )
+      return
+    }
 
     if (!eventItem.date || !eventItem.time) {
       setReminderError('Inserisci data e ora per attivare il promemoria.')
@@ -544,8 +706,8 @@ function Events() {
       }))
 
       setMessage('Promemoria attivato correttamente.')
-    } catch (error) {
-      console.error(error)
+    } catch (reminderRequestError) {
+      console.error(reminderRequestError)
       setReminderError(
         'Promemoria non attivato. Controlla che data e ora siano future.'
       )
@@ -597,7 +759,23 @@ function Events() {
             <span>Passati</span>
             <strong>{pastEvents.length}</strong>
           </article>
+
+          <article className="events-summary-card">
+            <span>Da controllare</span>
+            <strong>{unavailablePublicEvents.length}</strong>
+          </article>
         </div>
+
+        {unavailablePublicEvents.length > 0 && (
+          <div className="events-public-warning">
+            <strong>Ci sono eventi pubblici non più disponibili</strong>
+            <p>
+              Alcuni eventi aggiunti da Esplora sono stati rimossi dal creatore.
+              Puoi mantenerli come eventi privati nel tuo calendario oppure
+              eliminarli.
+            </p>
+          </div>
+        )}
 
         <div className="events-grid improved-events-grid">
           <form
@@ -655,7 +833,16 @@ function Events() {
               />
             </label>
 
-            {isEditingCopiedPublicEvent ? (
+            {isEditingUnavailablePublicEvent ? (
+              <div className="event-visibility-info unavailable">
+                <strong>Evento pubblico non più disponibile</strong>
+                <p>
+                  L’evento originale è stato rimosso da Esplora. Puoi modificare
+                  questa copia personale, mantenerla come evento privato oppure
+                  eliminarla dal tuo calendario.
+                </p>
+              </div>
+            ) : isEditingCopiedPublicEvent ? (
               <div className="event-visibility-info">
                 <strong>Evento aggiunto da Esplora eventi</strong>
                 <p>
@@ -737,6 +924,7 @@ function Events() {
 
               <div className="events-filter-group">
                 <button
+                  type="button"
                   className={
                     filter === 'all' ? 'event-filter active' : 'event-filter'
                   }
@@ -746,6 +934,7 @@ function Events() {
                 </button>
 
                 <button
+                  type="button"
                   className={
                     filter === 'future' ? 'event-filter active' : 'event-filter'
                   }
@@ -755,6 +944,7 @@ function Events() {
                 </button>
 
                 <button
+                  type="button"
                   className={
                     filter === 'past' ? 'event-filter active' : 'event-filter'
                   }
@@ -789,13 +979,16 @@ function Events() {
             ) : (
               visibleEvents.map((eventItem) => {
                 const isPast = eventItem.date < today
+                const publicSourceMissing = isPublicSourceMissing(eventItem)
 
                 return (
                   <article
                     className={
-                      isPast
-                        ? 'event-card improved-event-card past-event-card'
-                        : 'event-card improved-event-card'
+                      publicSourceMissing
+                        ? 'event-card improved-event-card unavailable-public-event-card'
+                        : isPast
+                          ? 'event-card improved-event-card past-event-card'
+                          : 'event-card improved-event-card'
                     }
                     key={eventItem.id}
                   >
@@ -808,10 +1001,15 @@ function Events() {
                             <span
                               className={`event-visibility-pill ${getEventVisibilityClass(
                                 eventItem,
-                                userId
+                                userId,
+                                publicSourceMissing
                               )}`}
                             >
-                              {getEventVisibilityLabel(eventItem, userId)}
+                              {getEventVisibilityLabel(
+                                eventItem,
+                                userId,
+                                publicSourceMissing
+                              )}
                             </span>
                           </div>
 
@@ -830,6 +1028,17 @@ function Events() {
                           </div>
                         </div>
                       </div>
+
+                      {publicSourceMissing && (
+                        <div className="event-unavailable-box">
+                          <strong>Evento pubblico non più disponibile</strong>
+                          <p>
+                            L’evento originale è stato rimosso da Esplora. Puoi
+                            mantenerlo come evento privato nel tuo calendario
+                            oppure eliminarlo.
+                          </p>
+                        </div>
+                      )}
 
                       {eventItem.location && (
                         <p className="event-location">📍 {eventItem.location}</p>
@@ -868,6 +1077,7 @@ function Events() {
 
                     <div className="event-actions improved-event-actions">
                       <button
+                        type="button"
                         className="btn btn-secondary"
                         onClick={() => handleStartEdit(eventItem)}
                       >
@@ -875,8 +1085,10 @@ function Events() {
                       </button>
 
                       <button
+                        type="button"
                         className="btn btn-secondary"
                         onClick={() => handleShowWeather(eventItem)}
+                        disabled={publicSourceMissing}
                       >
                         {weatherLoading === eventItem.id
                           ? 'Caricamento...'
@@ -884,18 +1096,32 @@ function Events() {
                       </button>
 
                       <button
+                        type="button"
                         className="btn btn-secondary"
                         onClick={() => handleScheduleReminder(eventItem)}
-                        disabled={isPast}
+                        disabled={isPast || publicSourceMissing}
                       >
                         Promemoria
                       </button>
 
+                      {publicSourceMissing && (
+                        <button
+                          type="button"
+                          className="btn btn-secondary"
+                          onClick={() => handleKeepPersonalCopy(eventItem.id)}
+                        >
+                          Mantieni copia personale
+                        </button>
+                      )}
+
                       <button
+                        type="button"
                         className="btn btn-danger"
                         onClick={() => handleDeleteEvent(eventItem.id)}
                       >
-                        Elimina
+                        {publicSourceMissing
+                          ? 'Rimuovi dal calendario'
+                          : 'Elimina'}
                       </button>
                     </div>
                   </article>

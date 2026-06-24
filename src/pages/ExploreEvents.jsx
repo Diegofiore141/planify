@@ -4,7 +4,6 @@ import {
   arrayRemove,
   arrayUnion,
   collection,
-  deleteDoc,
   doc,
   increment,
   onSnapshot,
@@ -46,7 +45,7 @@ function ExploreEvents() {
   const { user } = useAuth()
 
   const userId = user?.uid || ''
-  const userName = user?.displayName || 'Utente Planify'
+  const userName = user?.displayName || user?.email || 'Utente Planify'
 
   const [publicEvents, setPublicEvents] = useState([])
   const [personalEvents, setPersonalEvents] = useState([])
@@ -64,19 +63,26 @@ function ExploreEvents() {
   const [error, setError] = useState('')
 
   useEffect(() => {
-    if (!userId) return
+    if (!userId) return undefined
 
     const publicEventsRef = collection(db, 'publicEvents')
     const publicEventsQuery = query(publicEventsRef, orderBy('date', 'asc'))
 
-    const unsubscribePublicEvents = onSnapshot(publicEventsQuery, (snapshot) => {
-      const publicEventsData = snapshot.docs.map((document) => ({
-        id: document.id,
-        ...document.data(),
-      }))
+    const unsubscribePublicEvents = onSnapshot(
+      publicEventsQuery,
+      (snapshot) => {
+        const publicEventsData = snapshot.docs.map((document) => ({
+          id: document.id,
+          ...document.data(),
+        }))
 
-      setPublicEvents(publicEventsData)
-    })
+        setPublicEvents(publicEventsData)
+      },
+      (snapshotError) => {
+        console.error(snapshotError)
+        setError('Errore durante il caricamento degli eventi pubblici.')
+      }
+    )
 
     return () => {
       unsubscribePublicEvents()
@@ -84,7 +90,7 @@ function ExploreEvents() {
   }, [userId])
 
   useEffect(() => {
-    if (!userId) return
+    if (!userId) return undefined
 
     const personalEventsRef = collection(db, 'users', userId, 'events')
     const personalEventsQuery = query(personalEventsRef, orderBy('date', 'asc'))
@@ -98,6 +104,10 @@ function ExploreEvents() {
         }))
 
         setPersonalEvents(personalEventsData)
+      },
+      (snapshotError) => {
+        console.error(snapshotError)
+        setError('Errore durante il caricamento dei tuoi eventi.')
       }
     )
 
@@ -132,6 +142,7 @@ function ExploreEvents() {
 
     return futurePublicEvents.filter((eventItem) => {
       const isOwner = eventItem.ownerId === userId
+
       const isJoined =
         savedPublicEventIds.has(eventItem.id) ||
         eventItem.participantIds?.includes(userId)
@@ -186,7 +197,11 @@ function ExploreEvents() {
         time,
         location: location.trim(),
         description: description.trim(),
+        visibility: 'public',
+        sourcePublicEventId: publicEventRef.id,
+        sourceOwnerId: userId,
         createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
       }
 
       batch.set(publicEventRef, {
@@ -200,8 +215,6 @@ function ExploreEvents() {
 
       batch.set(personalEventRef, {
         ...baseEventData,
-        sourcePublicEventId: publicEventRef.id,
-        sourceOwnerId: userId,
       })
 
       await batch.commit()
@@ -214,6 +227,7 @@ function ExploreEvents() {
 
       setMessage('Evento pubblico creato e aggiunto al tuo calendario.')
     } catch (err) {
+      console.error(err)
       setError('Errore durante la pubblicazione dell’evento.')
     }
   }
@@ -254,21 +268,25 @@ function ExploreEvents() {
         time: publicEvent.time || '',
         location: publicEvent.location || '',
         description: publicEvent.description || '',
+        visibility: 'public',
         sourcePublicEventId: publicEvent.id,
         sourceOwnerId: publicEvent.ownerId,
         createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
       })
 
       batch.update(publicEventRef, {
         participantIds: arrayUnion(userId),
         participants: arrayUnion(participant),
         participantCount: increment(1),
+        updatedAt: serverTimestamp(),
       })
 
       await batch.commit()
 
       setMessage('Evento aggiunto al tuo calendario.')
     } catch (err) {
+      console.error(err)
       setError('Errore durante l’aggiunta dell’evento al calendario.')
     }
   }
@@ -321,6 +339,7 @@ function ExploreEvents() {
       const updateData = {
         participantIds: arrayRemove(userId),
         participantCount: Math.max(participantCount - 1, 0),
+        updatedAt: serverTimestamp(),
       }
 
       if (participantToRemove) {
@@ -333,6 +352,7 @@ function ExploreEvents() {
 
       setMessage('Partecipazione annullata e evento rimosso dal tuo calendario.')
     } catch (err) {
+      console.error(err)
       setError('Errore durante l’annullamento della partecipazione.')
     }
   }
@@ -341,10 +361,39 @@ function ExploreEvents() {
     setError('')
     setMessage('')
 
+    if (!userId) {
+      setError('Devi essere autenticato per eliminare un evento.')
+      return
+    }
+
+    const personalEventToRemove = personalEvents.find(
+      (eventItem) => eventItem.sourcePublicEventId === publicEventId
+    )
+
     try {
-      await deleteDoc(doc(db, 'publicEvents', publicEventId))
-      setMessage('Evento rimosso dalla pagina pubblica.')
+      const batch = writeBatch(db)
+
+      const publicEventRef = doc(db, 'publicEvents', publicEventId)
+
+      batch.delete(publicEventRef)
+
+      if (personalEventToRemove) {
+        const personalEventRef = doc(
+          db,
+          'users',
+          userId,
+          'events',
+          personalEventToRemove.id
+        )
+
+        batch.delete(personalEventRef)
+      }
+
+      await batch.commit()
+
+      setMessage('Evento pubblico rimosso anche dal tuo calendario.')
     } catch (err) {
+      console.error(err)
       setError('Errore durante l’eliminazione dell’evento pubblico.')
     }
   }
@@ -525,7 +574,9 @@ function ExploreEvents() {
 
                       <p className="explore-event-author">
                         Pubblicato da{' '}
-                        <strong>{publicEvent.ownerName || 'Utente Planify'}</strong>
+                        <strong>
+                          {publicEvent.ownerName || 'Utente Planify'}
+                        </strong>
                       </p>
 
                       {isOwner && (
