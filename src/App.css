@@ -5281,3 +5281,303 @@ select {
     radial-gradient(circle at 92% 24%, rgba(52, 211, 153, 0.22), transparent 32%),
     radial-gradient(circle at 50% 95%, rgba(167, 139, 250, 0.18), transparent 36%);
 }
+/* Migliora leggibilità Home con Aurora */
+.logo,
+.auth-v2-logo {
+  text-decoration: none;
+}
+
+.logo span,
+.auth-v2-logo span {
+  text-decoration: none;
+}
+
+/* Aurora più elegante e meno invadente */
+.soft-aurora-shape {
+  opacity: 0.28;
+  filter: blur(76px);
+}
+
+.soft-aurora-shape-one {
+  left: -150px;
+}
+
+.soft-aurora-shape-two {
+  right: -180px;
+  opacity: 0.24;
+}
+
+.soft-aurora-shape-three {
+  opacity: 0.2;
+}
+
+/* Testi più leggibili */
+.home-v2-content h1 {
+  max-width: 620px;
+  font-size: clamp(48px, 6vw, 76px);
+  line-height: 1.03;
+  letter-spacing: -2px;
+}
+
+.home-v2-content p,
+.home-v2-features article p,
+.home-v2-cta p {
+  color: #334155;
+}
+
+/* Card più solide sopra lo sfondo */
+.home-v2-preview-card,
+.home-v2-features article,
+.home-v2-cta,
+.home-v2-highlights div {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(226, 232, 240, 0.95);
+}
+
+/* Navbar più leggibile */
+.navbar {
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(18px);
+}
+
+/* Badge meno “sparato” */
+.home-v2-badge {
+  background: rgba(219, 234, 254, 0.85);
+  color: #1d4ed8;
+}
+/* Festività nel calendario */
+.planify-calendar-holiday {
+  background: #fef3c7 !important;
+  border-color: #f59e0b !important;
+  color: #92400e !important;
+  font-weight: 900;
+}
+
+.planify-calendar-holiday .fc-event-main {
+  color: #92400e !important;
+}
+
+.holiday-legend-pill {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.holiday-dot {
+  background: #f59e0b;
+}
+
+.holiday-popup-badge {
+  background: #fef3c7 !important;
+  color: #92400e !important;
+}
+
+.event-visibility-pill.holiday {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.holiday-popup-note {
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: #fffbeb;
+  color: #92400e !important;
+  font-weight: 800;
+}
+/* Popup calendario sempre centrato */
+.calendar-popup-overlay {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 9999 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 24px !important;
+  background: rgba(15, 23, 42, 0.42);
+  backdrop-filter: blur(8px);
+}
+
+.calendar-popup {
+  width: min(620px, 100%) !important;
+  max-height: calc(100vh - 48px) !important;
+  overflow-y: auto !important;
+  margin: 0 !important;
+}
+/* Colori eventi calendario */
+.planify-calendar-private-event {
+  background: #dbeafe !important;
+  border-color: #2563eb !important;
+  color: #1e3a8a !important;
+  font-weight: 900;
+}
+
+.planify-calendar-private-event .fc-event-main {
+  color: #1e3a8a !important;
+}
+
+.planify-calendar-public-event {
+  background: #dcfce7 !important;
+  border-color: #16a34a !important;
+  color: #166534 !important;
+  font-weight: 900;
+}
+
+.planify-calendar-public-event .fc-event-main {
+  color: #166534 !important;
+}
+
+.planify-calendar-explore-event {
+  background: #ede9fe !important;
+  border-color: #7c3aed !important;
+  color: #5b21b6 !important;
+  font-weight: 900;
+}
+
+.planify-calendar-explore-event .fc-event-main {
+  color: #5b21b6 !important;
+}
+
+/* Legenda colori eventi */
+.private-event-dot {
+  background: #2563eb;
+}
+
+.public-event-dot {
+  background: #16a34a;
+}
+
+.explore-event-dot {
+  background: #7c3aed;
+}
+/* Popup calendario sempre centrato */
+.calendar-popup-overlay {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 9999 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 24px !important;
+  background: rgba(15, 23, 42, 0.42);
+  backdrop-filter: blur(8px);
+}
+
+.calendar-popup {
+  width: min(620px, 100%) !important;
+  max-height: calc(100vh - 48px) !important;
+  overflow-y: auto !important;
+  margin: 0 !important;
+}
+
+/* Colori eventi calendario */
+.planify-calendar-private-event {
+  background: #dbeafe !important;
+  border-color: #2563eb !important;
+  color: #1e3a8a !important;
+  font-weight: 900;
+}
+
+.planify-calendar-private-event .fc-event-main {
+  color: #1e3a8a !important;
+}
+
+.planify-calendar-public-event {
+  background: #dcfce7 !important;
+  border-color: #16a34a !important;
+  color: #166534 !important;
+  font-weight: 900;
+}
+
+.planify-calendar-public-event .fc-event-main {
+  color: #166534 !important;
+}
+
+.planify-calendar-explore-event {
+  background: #ede9fe !important;
+  border-color: #7c3aed !important;
+  color: #5b21b6 !important;
+  font-weight: 900;
+}
+
+.planify-calendar-explore-event .fc-event-main {
+  color: #5b21b6 !important;
+}
+
+/* Legenda colori eventi */
+.private-event-dot {
+  background: #2563eb;
+}
+
+.public-event-dot {
+  background: #16a34a;
+}
+
+.explore-event-dot {
+  background: #7c3aed;
+}/* Festività più distinguibili dai task a priorità media */
+.planify-calendar-holiday {
+  background: #ffe4e6 !important;
+  border-color: #e11d48 !important;
+  color: #9f1239 !important;
+  font-weight: 900;
+}
+
+.planify-calendar-holiday .fc-event-main {
+  color: #9f1239 !important;
+}
+
+.holiday-legend-pill {
+  background: #ffe4e6 !important;
+  color: #9f1239 !important;
+}
+
+.holiday-dot {
+  background: #e11d48 !important;
+}
+
+.holiday-popup-badge {
+  background: #ffe4e6 !important;
+  color: #9f1239 !important;
+}
+
+.event-visibility-pill.holiday {
+  background: #ffe4e6 !important;
+  color: #9f1239 !important;
+}
+
+.holiday-popup-note {
+  background: #fff1f2 !important;
+  color: #9f1239 !important;
+}
+/* Colori definitivi eventi calendario */
+.fc .planify-calendar-private-event {
+  background: #dbeafe !important;
+  border-color: #2563eb !important;
+  color: #1e3a8a !important;
+  font-weight: 900;
+}
+
+.fc .planify-calendar-private-event .fc-event-main {
+  color: #1e3a8a !important;
+}
+
+.fc .planify-calendar-public-event {
+  background: #dcfce7 !important;
+  border-color: #16a34a !important;
+  color: #166534 !important;
+  font-weight: 900;
+}
+
+.fc .planify-calendar-public-event .fc-event-main {
+  color: #166534 !important;
+}
+
+.fc .planify-calendar-explore-event {
+  background: #ede9fe !important;
+  border-color: #7c3aed !important;
+  color: #5b21b6 !important;
+  font-weight: 900;
+}
+
+.fc .planify-calendar-explore-event .fc-event-main {
+  color: #5b21b6 !important;
+}

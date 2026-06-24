@@ -51,28 +51,169 @@ function formatTime(date) {
   return `${hours}:${minutes}`
 }
 
-function getEventVisibilityLabel(eventItem, userId) {
-  if (eventItem.sourcePublicEventId && eventItem.sourceOwnerId === userId) {
-    return 'Pubblico'
+function getCalendarEventKind(eventItem, userId) {
+  if (eventItem.sourcePublicEventId && eventItem.sourceOwnerId !== userId) {
+    return 'explore'
   }
 
+  if (eventItem.visibility === 'public' || eventItem.sourcePublicEventId) {
+    return 'public'
+  }
+
+  return 'private'
+}
+
+function getCalendarEventColors(kind) {
+  if (kind === 'public') {
+    return {
+      backgroundColor: '#dcfce7',
+      borderColor: '#16a34a',
+      textColor: '#166534',
+    }
+  }
+
+  if (kind === 'explore') {
+    return {
+      backgroundColor: '#ede9fe',
+      borderColor: '#7c3aed',
+      textColor: '#5b21b6',
+    }
+  }
+
+  return {
+    backgroundColor: '#dbeafe',
+    borderColor: '#2563eb',
+    textColor: '#1e3a8a',
+  }
+}
+
+function getEventVisibilityLabel(eventItem, userId) {
   if (eventItem.sourcePublicEventId && eventItem.sourceOwnerId !== userId) {
     return 'Da Esplora'
+  }
+
+  if (eventItem.visibility === 'public' || eventItem.sourcePublicEventId) {
+    return 'Pubblico'
   }
 
   return 'Privato'
 }
 
 function getEventVisibilityClass(eventItem, userId) {
-  if (eventItem.sourcePublicEventId && eventItem.sourceOwnerId === userId) {
-    return 'public'
-  }
-
   if (eventItem.sourcePublicEventId && eventItem.sourceOwnerId !== userId) {
     return 'explore'
   }
 
+  if (eventItem.visibility === 'public' || eventItem.sourcePublicEventId) {
+    return 'public'
+  }
+
   return 'private'
+}
+
+function addDays(date, days) {
+  const result = new Date(date)
+  result.setDate(result.getDate() + days)
+  return result
+}
+
+function getEasterDate(year) {
+  const a = year % 19
+  const b = Math.floor(year / 100)
+  const c = year % 100
+  const d = Math.floor(b / 4)
+  const e = b % 4
+  const f = Math.floor((b + 8) / 25)
+  const g = Math.floor((b - f + 1) / 3)
+  const h = (19 * a + b - d - g + 15) % 30
+  const i = Math.floor(c / 4)
+  const k = c % 4
+  const l = (32 + 2 * e + 2 * i - h - k) % 7
+  const m = Math.floor((a + 11 * h + 22 * l) / 451)
+  const month = Math.floor((h + l - 7 * m + 114) / 31)
+  const day = ((h + l - 7 * m + 114) % 31) + 1
+
+  return new Date(year, month - 1, day)
+}
+
+function getItalianHolidaysForYear(year) {
+  const easterDate = getEasterDate(year)
+  const easterMondayDate = addDays(easterDate, 1)
+
+  return [
+    {
+      id: `holiday-${year}-01-01`,
+      title: 'Capodanno',
+      date: `${year}-01-01`,
+      description: 'Primo giorno dell’anno.',
+    },
+    {
+      id: `holiday-${year}-01-06`,
+      title: 'Epifania',
+      date: `${year}-01-06`,
+      description: 'Festività nazionale.',
+    },
+    {
+      id: `holiday-${year}-easter`,
+      title: 'Pasqua',
+      date: formatDate(easterDate),
+      description: 'Festività mobile.',
+    },
+    {
+      id: `holiday-${year}-easter-monday`,
+      title: 'Pasquetta',
+      date: formatDate(easterMondayDate),
+      description: 'Lunedì dell’Angelo.',
+    },
+    {
+      id: `holiday-${year}-04-25`,
+      title: 'Festa della Liberazione',
+      date: `${year}-04-25`,
+      description: 'Festività nazionale italiana.',
+    },
+    {
+      id: `holiday-${year}-05-01`,
+      title: 'Festa del Lavoro',
+      date: `${year}-05-01`,
+      description: 'Festività nazionale.',
+    },
+    {
+      id: `holiday-${year}-06-02`,
+      title: 'Festa della Repubblica',
+      date: `${year}-06-02`,
+      description: 'Festività nazionale italiana.',
+    },
+    {
+      id: `holiday-${year}-08-15`,
+      title: 'Ferragosto',
+      date: `${year}-08-15`,
+      description: 'Assunzione di Maria.',
+    },
+    {
+      id: `holiday-${year}-11-01`,
+      title: 'Ognissanti',
+      date: `${year}-11-01`,
+      description: 'Festività nazionale.',
+    },
+    {
+      id: `holiday-${year}-12-08`,
+      title: 'Immacolata',
+      date: `${year}-12-08`,
+      description: 'Immacolata Concezione.',
+    },
+    {
+      id: `holiday-${year}-12-25`,
+      title: 'Natale',
+      date: `${year}-12-25`,
+      description: 'Festività natalizia.',
+    },
+    {
+      id: `holiday-${year}-12-26`,
+      title: 'Santo Stefano',
+      date: `${year}-12-26`,
+      description: 'Festività natalizia.',
+    },
+  ]
 }
 
 function Calendar() {
@@ -147,6 +288,8 @@ function Calendar() {
       .filter((eventItem) => eventItem.date)
       .map((eventItem) => {
         const hasTime = Boolean(eventItem.time)
+        const eventKind = getCalendarEventKind(eventItem, userId)
+        const eventColors = getCalendarEventColors(eventKind)
 
         return {
           id: `event-${eventItem.id}`,
@@ -155,7 +298,16 @@ function Calendar() {
             ? `${eventItem.date}T${eventItem.time}`
             : eventItem.date,
           allDay: !hasTime,
-          className: 'planify-calendar-event',
+
+          classNames: [
+            'planify-calendar-event',
+            `planify-calendar-${eventKind}-event`,
+          ],
+
+          backgroundColor: eventColors.backgroundColor,
+          borderColor: eventColors.borderColor,
+          textColor: eventColors.textColor,
+
           extendedProps: {
             type: 'event',
             originalId: eventItem.id,
@@ -167,6 +319,7 @@ function Calendar() {
             visibility: eventItem.visibility || 'private',
             sourcePublicEventId: eventItem.sourcePublicEventId || '',
             sourceOwnerId: eventItem.sourceOwnerId || '',
+            calendarEventKind: eventKind,
           },
         }
       })
@@ -181,11 +334,13 @@ function Calendar() {
           title: `Attività: ${taskItem.text}`,
           start: taskItem.dueDate,
           allDay: true,
-          className: taskItem.completed
-            ? `planify-calendar-task ${getPriorityClass(
-                priority
-              )} completed-calendar-task`
-            : `planify-calendar-task ${getPriorityClass(priority)}`,
+          classNames: taskItem.completed
+            ? [
+                'planify-calendar-task',
+                getPriorityClass(priority),
+                'completed-calendar-task',
+              ]
+            : ['planify-calendar-task', getPriorityClass(priority)],
           extendedProps: {
             type: 'task',
             originalId: taskItem.id,
@@ -197,8 +352,83 @@ function Calendar() {
         }
       })
 
-    return [...eventItems, ...taskItems]
-  }, [events, tasks])
+    const currentYear = new Date().getFullYear()
+    const holidayYears = [
+      currentYear - 1,
+      currentYear,
+      currentYear + 1,
+      currentYear + 2,
+    ]
+
+    const holidayItems = holidayYears
+      .flatMap((year) => getItalianHolidaysForYear(year))
+      .map((holiday) => ({
+        id: holiday.id,
+        title: holiday.title,
+        start: holiday.date,
+        allDay: true,
+        editable: false,
+        startEditable: false,
+        durationEditable: false,
+        classNames: ['planify-calendar-holiday'],
+        backgroundColor: '#ffe4e6',
+        borderColor: '#e11d48',
+        textColor: '#9f1239',
+        extendedProps: {
+          type: 'holiday',
+          originalId: holiday.id,
+          title: holiday.title,
+          date: holiday.date,
+          description: holiday.description,
+          calendarEventKind: 'holiday',
+        },
+      }))
+
+    return [...holidayItems, ...eventItems, ...taskItems]
+  }, [events, tasks, userId])
+
+  function handleEventDidMount(info) {
+    const item = info.event.extendedProps
+
+    if (item.type !== 'event' && item.type !== 'holiday') return
+
+    let colors = null
+
+    if (item.type === 'holiday') {
+      colors = {
+        backgroundColor: '#ffe4e6',
+        borderColor: '#e11d48',
+        textColor: '#9f1239',
+      }
+    } else {
+      colors = getCalendarEventColors(item.calendarEventKind)
+    }
+
+    info.el.style.setProperty(
+      'background-color',
+      colors.backgroundColor,
+      'important'
+    )
+    info.el.style.setProperty('border-color', colors.borderColor, 'important')
+    info.el.style.setProperty('color', colors.textColor, 'important')
+    info.el.style.setProperty('font-weight', '900', 'important')
+
+    const mainElement = info.el.querySelector('.fc-event-main')
+    const titleElement = info.el.querySelector('.fc-event-title')
+    const timeElement = info.el.querySelector('.fc-event-time')
+
+    if (mainElement) {
+      mainElement.style.setProperty('color', colors.textColor, 'important')
+    }
+
+    if (titleElement) {
+      titleElement.style.setProperty('color', colors.textColor, 'important')
+    }
+
+    if (timeElement) {
+      timeElement.style.setProperty('color', colors.textColor, 'important')
+    }
+  }
 
   function getCurrentVisibility(item) {
     if (item.sourcePublicEventId && item.sourceOwnerId === userId) {
@@ -217,6 +447,10 @@ function Calendar() {
     setPopupError('')
     setCalendarMessage('')
     setCalendarError('')
+
+    if (item.type === 'holiday') {
+      return
+    }
 
     if (item.type === 'event') {
       setEventForm({
@@ -268,6 +502,11 @@ function Calendar() {
   async function handleCalendarItemDrop(info) {
     const item = info.event.extendedProps
     const newStartDate = info.event.start
+
+    if (item.type === 'holiday') {
+      info.revert()
+      return
+    }
 
     if (!newStartDate) {
       info.revert()
@@ -599,6 +838,11 @@ function Calendar() {
   async function handleDeleteSelectedItem() {
     if (!selectedItem) return
 
+    if (selectedItem.type === 'holiday') {
+      setPopupError('Le festività automatiche non possono essere eliminate.')
+      return
+    }
+
     setPopupError('')
     setCalendarMessage('')
     setCalendarError('')
@@ -615,6 +859,8 @@ function Calendar() {
           selectedItem.originalId
         )
 
+        let removedOnlyPersonalCopy = false
+
         if (selectedItem.sourcePublicEventId) {
           const publicEventRef = doc(
             db,
@@ -622,13 +868,16 @@ function Calendar() {
             selectedItem.sourcePublicEventId
           )
 
-          if (selectedItem.sourceOwnerId === userId) {
-            batch.delete(publicEventRef)
-          } else {
-            const publicEventSnapshot = await getDoc(publicEventRef)
+          const publicEventSnapshot = await getDoc(publicEventRef)
 
-            if (publicEventSnapshot.exists()) {
-              const publicEventData = publicEventSnapshot.data()
+          if (publicEventSnapshot.exists()) {
+            const publicEventData = publicEventSnapshot.data()
+            const isPublicOwner = publicEventData.ownerId === userId
+
+            if (isPublicOwner) {
+              batch.delete(publicEventRef)
+            } else {
+              removedOnlyPersonalCopy = true
 
               const participantToRemove = publicEventData.participants?.find(
                 (participantItem) => participantItem.uid === userId
@@ -659,8 +908,7 @@ function Calendar() {
         await batch.commit()
 
         setCalendarMessage(
-          selectedItem.sourcePublicEventId &&
-            selectedItem.sourceOwnerId !== userId
+          removedOnlyPersonalCopy
             ? 'Evento rimosso dal tuo calendario e partecipazione annullata.'
             : 'Evento eliminato.'
         )
@@ -701,7 +949,7 @@ function Calendar() {
           <div>
             <h1>Calendario</h1>
             <p>
-              Visualizza eventi e attività con scadenza in un calendario
+              Visualizza eventi, attività e festività italiane in un calendario
               interattivo.
             </p>
           </div>
@@ -732,6 +980,7 @@ function Calendar() {
             eventClick={handleCalendarItemClick}
             dateClick={handleDateClick}
             eventDrop={handleCalendarItemDrop}
+            eventDidMount={handleEventDidMount}
             editable={true}
             eventStartEditable={true}
             eventDurationEditable={false}
@@ -757,8 +1006,23 @@ function Calendar() {
             <span className="legend-title">Tipologia</span>
 
             <span className="legend-pill event-legend-pill">
-              <strong className="legend-dot event-dot"></strong>
-              Evento
+              <strong className="legend-dot private-event-dot"></strong>
+              Privato
+            </span>
+
+            <span className="legend-pill event-legend-pill">
+              <strong className="legend-dot public-event-dot"></strong>
+              Pubblico
+            </span>
+
+            <span className="legend-pill event-legend-pill">
+              <strong className="legend-dot explore-event-dot"></strong>
+              Da Esplora
+            </span>
+
+            <span className="legend-pill holiday-legend-pill">
+              <strong className="legend-dot holiday-dot"></strong>
+              Festività
             </span>
           </div>
 
@@ -1067,20 +1331,26 @@ function Calendar() {
                           ? `calendar-popup-badge ${getPriorityClass(
                               taskForm.priority
                             )}`
-                          : 'calendar-popup-badge'
+                          : selectedItem.type === 'holiday'
+                            ? 'calendar-popup-badge holiday-popup-badge'
+                            : 'calendar-popup-badge'
                       }
                     >
                       {selectedItem.type === 'event'
                         ? 'Evento'
-                        : `Attività · Priorità ${getPriorityLabel(
-                            taskForm.priority
-                          )}`}
+                        : selectedItem.type === 'holiday'
+                          ? 'Festività'
+                          : `Attività · Priorità ${getPriorityLabel(
+                              taskForm.priority
+                            )}`}
                     </span>
 
                     <h2>
                       {selectedItem.type === 'event'
                         ? eventForm.title
-                        : taskForm.text}
+                        : selectedItem.type === 'holiday'
+                          ? selectedItem.title
+                          : taskForm.text}
                     </h2>
                   </div>
 
@@ -1088,6 +1358,43 @@ function Calendar() {
                     ×
                   </button>
                 </div>
+
+                {!isEditing && selectedItem.type === 'holiday' && (
+                  <>
+                    <div className="calendar-popup-content">
+                      <p>
+                        <strong>Tipo:</strong>{' '}
+                        <span className="event-visibility-pill holiday">
+                          Festività italiana
+                        </span>
+                      </p>
+
+                      <p>
+                        <strong>Data:</strong> {selectedItem.date}
+                      </p>
+
+                      <p>
+                        <strong>Descrizione:</strong>{' '}
+                        {selectedItem.description || 'Giorno festivo'}
+                      </p>
+
+                      <p className="holiday-popup-note">
+                        Questa festività è inserita automaticamente e non può
+                        essere modificata o eliminata.
+                      </p>
+                    </div>
+
+                    <div className="calendar-popup-actions">
+                      <button
+                        type="button"
+                        className="btn btn-secondary"
+                        onClick={closePopup}
+                      >
+                        Chiudi
+                      </button>
+                    </div>
+                  </>
+                )}
 
                 {!isEditing && selectedItem.type === 'event' && (
                   <>
