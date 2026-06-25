@@ -24,6 +24,10 @@ import itLocale from '@fullcalendar/core/locales/it'
 import { db } from '../services/firebase'
 import { useAuth } from '../context/AuthContext'
 
+function normalizeEmail(email) {
+  return email.trim().toLowerCase()
+}
+
 function getPriorityLabel(priority) {
   if (priority === 'alta') return 'Alta'
   if (priority === 'bassa') return 'Bassa'
@@ -92,6 +96,14 @@ function formatTime(date) {
 }
 
 function getCalendarEventKind(eventItem, userId) {
+  if (eventItem.sourceInviteEventId && eventItem.sourceOwnerId === userId) {
+    return 'invite'
+  }
+
+  if (eventItem.sourceInviteEventId && eventItem.sourceOwnerId !== userId) {
+    return 'invited'
+  }
+
   if (eventItem.sourcePublicEventId && eventItem.sourceOwnerId !== userId) {
     return 'explore'
   }
@@ -124,6 +136,14 @@ function getCalendarEventColors(kind) {
     }
   }
 
+  if (kind === 'invite' || kind === 'invited') {
+    return {
+      backgroundColor: '#fed7aa',
+      borderColor: '#ea580c',
+      textColor: '#7c2d12',
+    }
+  }
+
   return {
     backgroundColor: '#dbeafe',
     borderColor: '#2563eb',
@@ -131,9 +151,21 @@ function getCalendarEventColors(kind) {
   }
 }
 
-function getEventVisibilityLabel(eventItem, userId, isPublicSourceMissing = false) {
+function getEventVisibilityLabel(
+  eventItem,
+  userId,
+  isPublicSourceMissing = false
+) {
   if (isPublicSourceMissing) {
     return 'Non più pubblico'
+  }
+
+  if (eventItem.sourceInviteEventId && eventItem.sourceOwnerId === userId) {
+    return 'Su invito'
+  }
+
+  if (eventItem.sourceInviteEventId && eventItem.sourceOwnerId !== userId) {
+    return 'Invitato'
   }
 
   if (eventItem.sourcePublicEventId && eventItem.sourceOwnerId !== userId) {
@@ -147,9 +179,21 @@ function getEventVisibilityLabel(eventItem, userId, isPublicSourceMissing = fals
   return 'Privato'
 }
 
-function getEventVisibilityClass(eventItem, userId, isPublicSourceMissing = false) {
+function getEventVisibilityClass(
+  eventItem,
+  userId,
+  isPublicSourceMissing = false
+) {
   if (isPublicSourceMissing) {
     return 'unavailable'
+  }
+
+  if (eventItem.sourceInviteEventId && eventItem.sourceOwnerId === userId) {
+    return 'invite'
+  }
+
+  if (eventItem.sourceInviteEventId && eventItem.sourceOwnerId !== userId) {
+    return 'invited'
   }
 
   if (eventItem.sourcePublicEventId && eventItem.sourceOwnerId !== userId) {
@@ -272,6 +316,7 @@ function Calendar() {
   const { user } = useAuth()
 
   const userId = user?.uid || ''
+  const userEmail = user?.email || ''
   const userName = user?.displayName || user?.email || 'Utente Planify'
 
   const [events, setEvents] = useState([])
@@ -293,6 +338,7 @@ function Calendar() {
     privateEvents: true,
     publicEvents: true,
     exploreEvents: true,
+    inviteEvents: true,
     lowTasks: true,
     mediumTasks: true,
     highTasks: true,
@@ -410,6 +456,7 @@ function Calendar() {
       privateEvents: true,
       publicEvents: true,
       exploreEvents: true,
+      inviteEvents: true,
       lowTasks: true,
       mediumTasks: true,
       highTasks: true,
@@ -424,6 +471,7 @@ function Calendar() {
       privateEvents: false,
       publicEvents: false,
       exploreEvents: false,
+      inviteEvents: false,
       lowTasks: false,
       mediumTasks: false,
       highTasks: false,
@@ -446,7 +494,8 @@ function Calendar() {
     return (
       calendarFilters.privateEvents ||
       calendarFilters.publicEvents ||
-      calendarFilters.exploreEvents
+      calendarFilters.exploreEvents ||
+      calendarFilters.inviteEvents
     )
   }
 
@@ -470,6 +519,7 @@ function Calendar() {
       privateEvents: shouldActivate,
       publicEvents: shouldActivate,
       exploreEvents: shouldActivate,
+      inviteEvents: shouldActivate,
     }))
 
     refreshCalendarColors()
@@ -503,6 +553,9 @@ function Calendar() {
     if (eventKind === 'private') return calendarFilters.privateEvents
     if (eventKind === 'public') return calendarFilters.publicEvents
     if (eventKind === 'explore') return calendarFilters.exploreEvents
+    if (eventKind === 'invite' || eventKind === 'invited') {
+      return calendarFilters.inviteEvents
+    }
     if (eventKind === 'unavailable') return areEventFiltersActive()
 
     return true
@@ -568,6 +621,7 @@ function Calendar() {
             description: eventItem.description || '',
             visibility: eventItem.visibility || 'private',
             sourcePublicEventId: eventItem.sourcePublicEventId || '',
+            sourceInviteEventId: eventItem.sourceInviteEventId || '',
             sourceOwnerId: eventItem.sourceOwnerId || '',
             calendarEventKind: eventKind,
             publicSourceMissing,
@@ -729,6 +783,10 @@ function Calendar() {
       return 'private'
     }
 
+    if (item.sourceInviteEventId && item.sourceOwnerId === userId) {
+      return 'invite'
+    }
+
     if (item.sourcePublicEventId && item.sourceOwnerId === userId) {
       return 'public'
     }
@@ -858,6 +916,16 @@ function Calendar() {
           batch.update(publicEventRef, updatedEvent)
         }
 
+        if (item.sourceInviteEventId && item.sourceOwnerId === userId) {
+          const inviteEventRef = doc(
+            db,
+            'inviteEvents',
+            item.sourceInviteEventId
+          )
+
+          batch.update(inviteEventRef, updatedEvent)
+        }
+
         await batch.commit()
 
         updateLocalEvent(item.originalId, localUpdatedEvent)
@@ -957,6 +1025,7 @@ function Calendar() {
           ...eventData,
           visibility: 'private',
           sourcePublicEventId: '',
+          sourceInviteEventId: '',
           sourceOwnerId: '',
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
@@ -1045,6 +1114,12 @@ function Calendar() {
     const isCopiedPublicEvent =
       selectedItem.sourcePublicEventId && selectedItem.sourceOwnerId !== userId
 
+    const isOwnedInviteEvent =
+      selectedItem.sourceInviteEventId && selectedItem.sourceOwnerId === userId
+
+    const isCopiedInviteEvent =
+      selectedItem.sourceInviteEventId && selectedItem.sourceOwnerId !== userId
+
     try {
       const batch = writeBatch(db)
 
@@ -1056,7 +1131,11 @@ function Calendar() {
         selectedItem.originalId
       )
 
-      if (isCopiedPublicEvent || isUnavailablePublicEvent) {
+      if (
+        isCopiedPublicEvent ||
+        isCopiedInviteEvent ||
+        isUnavailablePublicEvent
+      ) {
         batch.update(eventRef, {
           ...eventData,
           updatedAt: serverTimestamp(),
@@ -1086,15 +1165,16 @@ function Calendar() {
             selectedItem.sourcePublicEventId
           )
 
-          const personalUpdate = {
+          batch.update(eventRef, {
             ...eventData,
             visibility: 'public',
             sourcePublicEventId: selectedItem.sourcePublicEventId,
+            sourceInviteEventId: '',
             sourceOwnerId: userId,
             updatedAt: serverTimestamp(),
-          }
+          })
 
-          const publicUpdate = {
+          batch.update(publicEventRef, {
             ...eventData,
             visibility: 'public',
             sourcePublicEventId: selectedItem.sourcePublicEventId,
@@ -1102,10 +1182,7 @@ function Calendar() {
             ownerId: userId,
             ownerName: userName,
             updatedAt: serverTimestamp(),
-          }
-
-          batch.update(eventRef, personalUpdate)
-          batch.update(publicEventRef, publicUpdate)
+          })
 
           await batch.commit()
 
@@ -1113,20 +1190,32 @@ function Calendar() {
             ...eventData,
             visibility: 'public',
             sourcePublicEventId: selectedItem.sourcePublicEventId,
+            sourceInviteEventId: '',
             sourceOwnerId: userId,
           })
         } else {
+          if (isOwnedInviteEvent) {
+            const inviteEventRef = doc(
+              db,
+              'inviteEvents',
+              selectedItem.sourceInviteEventId
+            )
+
+            batch.delete(inviteEventRef)
+          }
+
           const publicEventRef = doc(collection(db, 'publicEvents'))
 
-          const personalUpdate = {
+          batch.update(eventRef, {
             ...eventData,
             visibility: 'public',
             sourcePublicEventId: publicEventRef.id,
+            sourceInviteEventId: '',
             sourceOwnerId: userId,
             updatedAt: serverTimestamp(),
-          }
+          })
 
-          const publicCreate = {
+          batch.set(publicEventRef, {
             ...eventData,
             visibility: 'public',
             sourcePublicEventId: publicEventRef.id,
@@ -1138,10 +1227,7 @@ function Calendar() {
             participantCount: 1,
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp(),
-          }
-
-          batch.update(eventRef, personalUpdate)
-          batch.set(publicEventRef, publicCreate)
+          })
 
           await batch.commit()
 
@@ -1149,9 +1235,45 @@ function Calendar() {
             ...eventData,
             visibility: 'public',
             sourcePublicEventId: publicEventRef.id,
+            sourceInviteEventId: '',
             sourceOwnerId: userId,
           })
         }
+      } else if (eventForm.visibility === 'invite' && isOwnedInviteEvent) {
+        const inviteEventRef = doc(
+          db,
+          'inviteEvents',
+          selectedItem.sourceInviteEventId
+        )
+
+        batch.update(eventRef, {
+          ...eventData,
+          visibility: 'invite',
+          sourcePublicEventId: '',
+          sourceInviteEventId: selectedItem.sourceInviteEventId,
+          sourceOwnerId: userId,
+          updatedAt: serverTimestamp(),
+        })
+
+        batch.update(inviteEventRef, {
+          ...eventData,
+          visibility: 'invite',
+          sourceInviteEventId: selectedItem.sourceInviteEventId,
+          sourceOwnerId: userId,
+          ownerId: userId,
+          ownerName: userName,
+          updatedAt: serverTimestamp(),
+        })
+
+        await batch.commit()
+
+        updateLocalEvent(selectedItem.originalId, {
+          ...eventData,
+          visibility: 'invite',
+          sourcePublicEventId: '',
+          sourceInviteEventId: selectedItem.sourceInviteEventId,
+          sourceOwnerId: userId,
+        })
       } else {
         if (isOwnedPublicEvent) {
           const publicEventRef = doc(
@@ -1179,45 +1301,37 @@ function Calendar() {
             }
           }
 
-          const privateUpdate = {
-            ...eventData,
-            visibility: 'private',
-            sourcePublicEventId: '',
-            sourceOwnerId: '',
-            updatedAt: serverTimestamp(),
-          }
-
-          batch.update(eventRef, privateUpdate)
           batch.delete(publicEventRef)
-
-          await batch.commit()
-
-          updateLocalEvent(selectedItem.originalId, {
-            ...eventData,
-            visibility: 'private',
-            sourcePublicEventId: '',
-            sourceOwnerId: '',
-          })
-        } else {
-          const privateUpdate = {
-            ...eventData,
-            visibility: 'private',
-            sourcePublicEventId: '',
-            sourceOwnerId: '',
-            updatedAt: serverTimestamp(),
-          }
-
-          batch.update(eventRef, privateUpdate)
-
-          await batch.commit()
-
-          updateLocalEvent(selectedItem.originalId, {
-            ...eventData,
-            visibility: 'private',
-            sourcePublicEventId: '',
-            sourceOwnerId: '',
-          })
         }
+
+        if (isOwnedInviteEvent) {
+          const inviteEventRef = doc(
+            db,
+            'inviteEvents',
+            selectedItem.sourceInviteEventId
+          )
+
+          batch.delete(inviteEventRef)
+        }
+
+        batch.update(eventRef, {
+          ...eventData,
+          visibility: 'private',
+          sourcePublicEventId: '',
+          sourceInviteEventId: '',
+          sourceOwnerId: '',
+          updatedAt: serverTimestamp(),
+        })
+
+        await batch.commit()
+
+        updateLocalEvent(selectedItem.originalId, {
+          ...eventData,
+          visibility: 'private',
+          sourcePublicEventId: '',
+          sourceInviteEventId: '',
+          sourceOwnerId: '',
+        })
       }
 
       setCalendarMessage('Evento aggiornato correttamente.')
@@ -1339,6 +1453,69 @@ function Calendar() {
           }
         }
 
+        if (selectedItem.sourceInviteEventId) {
+          const inviteEventRef = doc(
+            db,
+            'inviteEvents',
+            selectedItem.sourceInviteEventId
+          )
+
+          const inviteEventSnapshot = await getDoc(inviteEventRef)
+
+          if (inviteEventSnapshot.exists()) {
+            const inviteEventData = inviteEventSnapshot.data()
+            const isInviteOwner = inviteEventData.ownerId === userId
+
+            if (isInviteOwner) {
+              batch.delete(inviteEventRef)
+            } else {
+              removedOnlyPersonalCopy = true
+
+              const updatedInvitedPeople = inviteEventData.invitedPeople?.map(
+                (person) => {
+                  const isCurrentUser =
+                    person.uid === userId ||
+                    normalizeEmail(person.email || '') ===
+                      normalizeEmail(userEmail)
+
+                  if (!isCurrentUser) return person
+
+                  return {
+                    ...person,
+                    uid: person.uid || userId,
+                    name: person.name || userName,
+                    status: 'declined',
+                    declinedAt: new Date().toISOString(),
+                  }
+                }
+              )
+
+              const participantToRemove = inviteEventData.participants?.find(
+                (participantItem) => participantItem.uid === userId
+              )
+
+              const participantCount =
+                inviteEventData.participantCount ||
+                inviteEventData.participantIds?.length ||
+                inviteEventData.participants?.length ||
+                0
+
+              const updateData = {
+                invitedPeople: updatedInvitedPeople || [],
+                participantIds: arrayRemove(userId),
+                participantCount: Math.max(participantCount - 1, 0),
+                updatedAt: serverTimestamp(),
+              }
+
+              if (participantToRemove) {
+                updateData.participants = arrayRemove(participantToRemove)
+              }
+
+              batch.update(inviteEventRef, updateData)
+            }
+          }
+        }
+
         batch.delete(eventRef)
 
         await batch.commit()
@@ -1347,7 +1524,7 @@ function Calendar() {
 
         setCalendarMessage(
           removedOnlyPersonalCopy
-            ? 'Evento rimosso dal tuo calendario e partecipazione annullata.'
+            ? 'Evento rimosso dal tuo calendario.'
             : 'Evento eliminato.'
         )
 
@@ -1387,6 +1564,11 @@ function Calendar() {
     selectedItem?.sourcePublicEventId &&
     selectedItem?.sourceOwnerId !== userId &&
     !selectedItem?.publicSourceMissing
+
+  const isEditingCopiedInviteEvent =
+    selectedItem?.type === 'event' &&
+    selectedItem?.sourceInviteEventId &&
+    selectedItem?.sourceOwnerId !== userId
 
   const isEditingUnavailablePublicEvent =
     selectedItem?.type === 'event' &&
@@ -1580,6 +1762,28 @@ function Calendar() {
               >
                 <strong className="legend-dot explore-event-dot"></strong>
                 Da Esplora
+              </span>
+
+              <span
+                role="button"
+                tabIndex={0}
+                className={getLegendPillClass(
+                  'legend-pill event-legend-pill',
+                  calendarFilters.inviteEvents
+                )}
+                onClick={(event) => {
+                  event.stopPropagation()
+                  toggleCalendarFilter('inviteEvents')
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') {
+                    event.stopPropagation()
+                    toggleCalendarFilter('inviteEvents')
+                  }
+                }}
+              >
+                <strong className="legend-dot invite-event-dot"></strong>
+                Su invito
               </span>
             </button>
 
@@ -1891,6 +2095,21 @@ function Calendar() {
                       </div>
                     </div>
 
+                    <div className="calendar-invite-helper-box">
+                      <div>
+                        <strong>Vuoi creare un evento su invito?</strong>
+                        <p>
+                          Gli eventi su invito richiedono una lista di email
+                          invitate. Per gestirli meglio, creali dalla pagina
+                          Eventi.
+                        </p>
+                      </div>
+
+                      <Link to="/events" className="btn btn-secondary">
+                        Crea da Eventi
+                      </Link>
+                    </div>
+
                     {popupError && (
                       <p className="error-message">{popupError}</p>
                     )}
@@ -1993,13 +2212,17 @@ function Calendar() {
                             ? 'calendar-popup-badge holiday-popup-badge'
                             : selectedItem.publicSourceMissing
                               ? 'calendar-popup-badge unavailable'
-                              : 'calendar-popup-badge'
+                              : selectedItem.sourceInviteEventId
+                                ? 'calendar-popup-badge invite'
+                                : 'calendar-popup-badge'
                       }
                     >
                       {selectedItem.type === 'event'
                         ? selectedItem.publicSourceMissing
                           ? 'Evento non più pubblico'
-                          : 'Evento'
+                          : selectedItem.sourceInviteEventId
+                            ? 'Evento su invito'
+                            : 'Evento'
                         : selectedItem.type === 'holiday'
                           ? 'Festività'
                           : `Attività · Priorità ${getPriorityLabel(
@@ -2119,7 +2342,9 @@ function Calendar() {
                         className="btn btn-danger"
                         onClick={handleDeleteSelectedItem}
                       >
-                        {selectedItem.publicSourceMissing
+                        {selectedItem.publicSourceMissing ||
+                        (selectedItem.sourceInviteEventId &&
+                          selectedItem.sourceOwnerId !== userId)
                           ? 'Rimuovi dal calendario'
                           : 'Elimina'}
                       </button>
@@ -2278,12 +2503,17 @@ function Calendar() {
                           pagina Eventi.
                         </p>
                       </div>
-                    ) : isEditingCopiedPublicEvent ? (
+                    ) : isEditingCopiedPublicEvent ||
+                      isEditingCopiedInviteEvent ? (
                       <div className="event-visibility-info">
-                        <strong>Evento aggiunto da Esplora eventi</strong>
+                        <strong>
+                          {isEditingCopiedInviteEvent
+                            ? 'Evento ricevuto su invito'
+                            : 'Evento aggiunto da Esplora eventi'}
+                        </strong>
                         <p>
-                          Stai modificando solo la tua copia personale.
-                          L’evento pubblico originale non viene modificato.
+                          Stai modificando solo la tua copia personale. L’evento
+                          originale non viene modificato.
                         </p>
                       </div>
                     ) : (
@@ -2342,6 +2572,38 @@ function Calendar() {
                               <p>Compare anche in Esplora eventi.</p>
                             </div>
                           </label>
+
+                          {selectedItem.sourceInviteEventId &&
+                            selectedItem.sourceOwnerId === userId && (
+                              <label
+                                className={
+                                  eventForm.visibility === 'invite'
+                                    ? 'event-visibility-option active'
+                                    : 'event-visibility-option'
+                                }
+                              >
+                                <input
+                                  type="radio"
+                                  name="calendar-edit-visibility"
+                                  value="invite"
+                                  checked={eventForm.visibility === 'invite'}
+                                  onChange={() =>
+                                    setEventForm({
+                                      ...eventForm,
+                                      visibility: 'invite',
+                                    })
+                                  }
+                                />
+
+                                <div>
+                                  <strong>Su invito</strong>
+                                  <p>
+                                    Resta un evento su invito. Gestisci le email
+                                    dalla pagina Eventi.
+                                  </p>
+                                </div>
+                              </label>
+                            )}
                         </div>
                       </div>
                     )}

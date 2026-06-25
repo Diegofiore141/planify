@@ -9813,3 +9813,911 @@ select {
     align-items: flex-start;
   }
 }
+/* Campo email invitate stile chip */
+.invite-email-field {
+  display: grid;
+  gap: 8px;
+}
+
+.invite-email-field > span {
+  color: #475569;
+  font-size: 0.88rem;
+  font-weight: 800;
+}
+
+.invite-email-chip-box {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-height: 52px;
+  padding: 10px 12px;
+  border: 1px solid rgba(148, 163, 184, 0.26);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+}
+
+.invite-email-chip-box:focus-within {
+  border-color: rgba(79, 70, 229, 0.48);
+  box-shadow:
+    0 0 0 4px rgba(99, 102, 241, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.72);
+}
+
+.invite-email-chip-box input {
+  flex: 1;
+  min-width: 180px;
+  border: 0 !important;
+  outline: 0 !important;
+  background: transparent !important;
+  padding: 8px 4px !important;
+  box-shadow: none !important;
+}
+
+.invite-email-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  max-width: 100%;
+  padding: 7px 10px 7px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(99, 102, 241, 0.18);
+  background: rgba(238, 242, 255, 0.95);
+  color: #3730a3;
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+.invite-email-chip button {
+  display: inline-grid;
+  place-items: center;
+  width: 19px;
+  height: 19px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(99, 102, 241, 0.13);
+  color: #3730a3;
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.invite-email-chip button:hover {
+  background: rgba(99, 102, 241, 0.22);
+}
+
+.invite-email-field p {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+.event-visibility-pill.invite,
+.event-visibility-pill.invited {
+  background: rgba(224, 231, 255, 0.9);
+  color: #3730a3;
+  border: 1px solid rgba(99, 102, 241, 0.25);
+}
+
+.invite-email-readonly-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.invite-email-readonly-list p {
+  margin: 0;
+}
+
+.invite-email-readonly-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 7px 11px;
+  border-radius: 999px;
+  border: 1px solid rgba(99, 102, 241, 0.18);
+  background: rgba(238, 242, 255, 0.9);
+  color: #3730a3;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+/* Box email invitate: stesso colore degli eventi su invito */
+.event-visibility-info:has(.invite-email-readonly-list) {
+  border: 1px solid rgba(99, 102, 241, 0.22) !important;
+  background: rgba(238, 242, 255, 0.72) !important;
+  color: #3730a3 !important;
+}
+
+.event-visibility-info:has(.invite-email-readonly-list) strong {
+  color: #312e81 !important;
+}
+
+.event-visibility-info:has(.invite-email-readonly-list) p {
+  color: #4338ca !important;
+}
+
+.invite-email-readonly-chip {
+  border: 1px solid rgba(99, 102, 241, 0.22) !important;
+  background: rgba(224, 231, 255, 0.95) !important;
+  color: #3730a3 !important;
+}
+
+.invite-email-chip {
+  border: 1px solid rgba(99, 102, 241, 0.22) !important;
+  background: rgba(224, 231, 255, 0.95) !important;
+  color: #3730a3 !important;
+}
+/* Email invitate: stesso colore blu del calendario */
+.event-visibility-info:has(.invite-email-readonly-list) {
+  border: 1px solid rgba(37, 99, 235, 0.22) !important;
+  background: rgba(219, 234, 254, 0.72) !important;
+  color: #1e3a8a !important;
+}
+
+.event-visibility-info:has(.invite-email-readonly-list) strong {
+  color: #1e3a8a !important;
+}
+
+.event-visibility-info:has(.invite-email-readonly-list) p {
+  color: #1e40af !important;
+}
+
+.invite-email-chip,
+.invite-email-readonly-chip {
+  border: 1px solid rgba(37, 99, 235, 0.22) !important;
+  background: rgba(219, 234, 254, 0.95) !important;
+  color: #1e3a8a !important;
+}
+
+.invite-email-chip button {
+  background: rgba(37, 99, 235, 0.12) !important;
+  color: #1e3a8a !important;
+}
+
+.invite-email-chip button:hover {
+  background: rgba(37, 99, 235, 0.22) !important;
+}
+/* Email invitate: stesso colore del badge "Su invito" */
+.event-visibility-info:has(.invite-email-readonly-list) {
+  border: 1px solid rgba(99, 102, 241, 0.25) !important;
+  background: rgba(238, 242, 255, 0.88) !important;
+  color: #3730a3 !important;
+}
+
+.event-visibility-info:has(.invite-email-readonly-list) strong {
+  color: #312e81 !important;
+}
+
+.event-visibility-info:has(.invite-email-readonly-list) p {
+  color: #3730a3 !important;
+}
+
+.invite-email-readonly-chip,
+.invite-email-chip {
+  border: 1px solid rgba(99, 102, 241, 0.25) !important;
+  background: rgba(224, 231, 255, 0.95) !important;
+  color: #3730a3 !important;
+}
+
+.invite-email-chip button {
+  background: rgba(99, 102, 241, 0.14) !important;
+  color: #3730a3 !important;
+}
+
+.invite-email-chip button:hover {
+  background: rgba(99, 102, 241, 0.24) !important;
+}
+/* Uniforma "Su invito" e "Email invitate" allo stile chiaro di "Pubblico" */
+.event-visibility-pill.invite,
+.event-visibility-pill.invited {
+  background: rgba(255, 255, 255, 0.92) !important;
+  color: #7e22ce !important;
+  border: 1px solid rgba(126, 34, 206, 0.22) !important;
+  box-shadow: 0 8px 20px rgba(126, 34, 206, 0.08) !important;
+}
+
+/* Box Email invitate: non pieno, ma chiaro come la pill Pubblico */
+.event-visibility-info:has(.invite-email-readonly-list) {
+  border: 1px solid rgba(126, 34, 206, 0.18) !important;
+  background: rgba(255, 255, 255, 0.82) !important;
+  color: #7e22ce !important;
+  box-shadow: 0 10px 24px rgba(126, 34, 206, 0.06) !important;
+}
+
+.event-visibility-info:has(.invite-email-readonly-list) strong {
+  color: #6b21a8 !important;
+}
+
+/* Chip email: stesso stile chiaro */
+.invite-email-readonly-chip,
+.invite-email-chip {
+  border: 1px solid rgba(126, 34, 206, 0.18) !important;
+  background: rgba(255, 255, 255, 0.9) !important;
+  color: #6b21a8 !important;
+  box-shadow: 0 6px 16px rgba(126, 34, 206, 0.06) !important;
+}
+
+.invite-email-chip button {
+  background: rgba(126, 34, 206, 0.08) !important;
+  color: #6b21a8 !important;
+}
+
+.invite-email-chip button:hover {
+  background: rgba(126, 34, 206, 0.16) !important;
+}
+/* Versione finale più leggibile per box Email invitate */
+.event-visibility-pill.invite,
+.event-visibility-pill.invited {
+  background: rgba(245, 243, 255, 0.95) !important;
+  color: #6d28d9 !important;
+  border: 1px solid rgba(124, 58, 237, 0.22) !important;
+  box-shadow: 0 6px 16px rgba(124, 58, 237, 0.08) !important;
+}
+
+.event-visibility-info:has(.invite-email-readonly-list) {
+  border: 1px solid rgba(124, 58, 237, 0.18) !important;
+  background: linear-gradient(
+    135deg,
+    rgba(245, 243, 255, 0.88),
+    rgba(255, 255, 255, 0.92)
+  ) !important;
+  color: #5b21b6 !important;
+  box-shadow: 0 10px 24px rgba(124, 58, 237, 0.08) !important;
+}
+
+.event-visibility-info:has(.invite-email-readonly-list) strong {
+  color: #4c1d95 !important;
+  font-weight: 900 !important;
+}
+
+.invite-email-readonly-chip,
+.invite-email-chip {
+  border: 1px solid rgba(124, 58, 237, 0.2) !important;
+  background: rgba(237, 233, 254, 0.95) !important;
+  color: #5b21b6 !important;
+  font-weight: 900 !important;
+  box-shadow: 0 6px 14px rgba(124, 58, 237, 0.08) !important;
+}
+
+.invite-email-chip button {
+  background: rgba(124, 58, 237, 0.1) !important;
+  color: #5b21b6 !important;
+}
+
+.invite-email-chip button:hover {
+  background: rgba(124, 58, 237, 0.18) !important;
+}
+.invite-event-dot {
+  background: #7c3aed !important;
+}
+
+.planify-calendar-invite-event,
+.planify-calendar-invited-event {
+  background-color: #ede9fe !important;
+  border-color: #7c3aed !important;
+  color: #5b21b6 !important;
+}
+
+.planify-calendar-invite-event .fc-event-main,
+.planify-calendar-invite-event .fc-event-title,
+.planify-calendar-invite-event .fc-event-time,
+.planify-calendar-invited-event .fc-event-main,
+.planify-calendar-invited-event .fc-event-title,
+.planify-calendar-invited-event .fc-event-time {
+  color: #5b21b6 !important;
+}
+
+.calendar-popup-badge.invite {
+  background: rgba(237, 233, 254, 0.95);
+  color: #5b21b6;
+  border: 1px solid rgba(124, 58, 237, 0.22);
+}
+/* PALETTE FINALE PROVVISORIA EVENTI
+   Privato = blu
+   Pubblico = viola
+   Da Esplora = rosa
+   Su invito = ambra
+*/
+
+/* Badge Su invito in Events */
+.event-visibility-pill.invite,
+.event-visibility-pill.invited {
+  background: rgba(254, 243, 199, 0.95) !important;
+  color: #92400e !important;
+  border: 1px solid rgba(245, 158, 11, 0.35) !important;
+  box-shadow: 0 6px 16px rgba(245, 158, 11, 0.12) !important;
+}
+
+/* Box Email invitate */
+.event-visibility-info:has(.invite-email-readonly-list) {
+  border: 1px solid rgba(245, 158, 11, 0.28) !important;
+  background: linear-gradient(
+    135deg,
+    rgba(254, 243, 199, 0.82),
+    rgba(255, 255, 255, 0.92)
+  ) !important;
+  color: #92400e !important;
+  box-shadow: 0 10px 24px rgba(245, 158, 11, 0.1) !important;
+}
+
+.event-visibility-info:has(.invite-email-readonly-list) strong {
+  color: #78350f !important;
+  font-weight: 900 !important;
+}
+
+/* Chip email */
+.invite-email-readonly-chip,
+.invite-email-chip {
+  border: 1px solid rgba(245, 158, 11, 0.32) !important;
+  background: rgba(255, 251, 235, 0.95) !important;
+  color: #92400e !important;
+  font-weight: 900 !important;
+  box-shadow: 0 6px 14px rgba(245, 158, 11, 0.1) !important;
+}
+
+.invite-email-chip button {
+  background: rgba(245, 158, 11, 0.14) !important;
+  color: #92400e !important;
+}
+
+.invite-email-chip button:hover {
+  background: rgba(245, 158, 11, 0.24) !important;
+}
+
+/* Calendario: eventi su invito */
+.planify-calendar-invite-event,
+.planify-calendar-invited-event {
+  background-color: #fef3c7 !important;
+  border-color: #f59e0b !important;
+  color: #92400e !important;
+}
+
+.planify-calendar-invite-event .fc-event-main,
+.planify-calendar-invite-event .fc-event-title,
+.planify-calendar-invite-event .fc-event-time,
+.planify-calendar-invited-event .fc-event-main,
+.planify-calendar-invited-event .fc-event-title,
+.planify-calendar-invited-event .fc-event-time {
+  color: #92400e !important;
+}
+
+/* Legenda calendario */
+.invite-event-dot {
+  background: #f59e0b !important;
+}
+
+/* Popup calendario */
+.calendar-popup-badge.invite {
+  background: rgba(254, 243, 199, 0.95) !important;
+  color: #92400e !important;
+  border: 1px solid rgba(245, 158, 11, 0.35) !important;
+}
+/* Eventi su invito: arancione più distinguibile dalle attività */
+.event-visibility-pill.invite,
+.event-visibility-pill.invited {
+  background: rgba(255, 237, 213, 0.95) !important;
+  color: #9a3412 !important;
+  border: 1px solid rgba(249, 115, 22, 0.38) !important;
+  box-shadow: 0 6px 16px rgba(249, 115, 22, 0.12) !important;
+}
+
+.event-visibility-info:has(.invite-email-readonly-list) {
+  border: 1px solid rgba(249, 115, 22, 0.3) !important;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 237, 213, 0.88),
+    rgba(255, 255, 255, 0.94)
+  ) !important;
+  color: #9a3412 !important;
+  box-shadow: 0 10px 24px rgba(249, 115, 22, 0.1) !important;
+}
+
+.event-visibility-info:has(.invite-email-readonly-list) strong {
+  color: #7c2d12 !important;
+}
+
+.invite-email-readonly-chip,
+.invite-email-chip {
+  border: 1px solid rgba(249, 115, 22, 0.34) !important;
+  background: rgba(255, 247, 237, 0.96) !important;
+  color: #9a3412 !important;
+  font-weight: 900 !important;
+}
+
+.invite-email-chip button {
+  background: rgba(249, 115, 22, 0.14) !important;
+  color: #9a3412 !important;
+}
+
+.invite-email-chip button:hover {
+  background: rgba(249, 115, 22, 0.24) !important;
+}
+
+/* Calendario: su invito arancione */
+.planify-calendar-invite-event,
+.planify-calendar-invited-event {
+  background-color: #ffedd5 !important;
+  border-color: #f97316 !important;
+  color: #9a3412 !important;
+}
+
+.planify-calendar-invite-event .fc-event-main,
+.planify-calendar-invite-event .fc-event-title,
+.planify-calendar-invite-event .fc-event-time,
+.planify-calendar-invited-event .fc-event-main,
+.planify-calendar-invited-event .fc-event-title,
+.planify-calendar-invited-event .fc-event-time {
+  color: #9a3412 !important;
+}
+
+.invite-event-dot {
+  background: #f97316 !important;
+}
+
+.calendar-popup-badge.invite {
+  background: rgba(255, 237, 213, 0.95) !important;
+  color: #9a3412 !important;
+  border: 1px solid rgba(249, 115, 22, 0.38) !important;
+}
+/* Su invito: arancione più deciso e coerente con la legenda */
+.planify-calendar-invite-event,
+.planify-calendar-invited-event {
+  background-color: #fed7aa !important;
+  border-color: #ea580c !important;
+  color: #7c2d12 !important;
+}
+
+.planify-calendar-invite-event .fc-event-main,
+.planify-calendar-invite-event .fc-event-title,
+.planify-calendar-invite-event .fc-event-time,
+.planify-calendar-invited-event .fc-event-main,
+.planify-calendar-invited-event .fc-event-title,
+.planify-calendar-invited-event .fc-event-time {
+  color: #7c2d12 !important;
+}
+
+.invite-event-dot {
+  background: #f97316 !important;
+}
+
+.event-visibility-pill.invite,
+.event-visibility-pill.invited {
+  background: rgba(255, 237, 213, 0.95) !important;
+  color: #7c2d12 !important;
+  border: 1px solid rgba(234, 88, 12, 0.42) !important;
+}
+
+.calendar-popup-badge.invite {
+  background: rgba(255, 237, 213, 0.95) !important;
+  color: #7c2d12 !important;
+  border: 1px solid rgba(234, 88, 12, 0.42) !important;
+}
+/* Box aiuto creazione evento su invito dal calendario */
+.calendar-invite-helper-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px 16px;
+  border: 1px solid rgba(249, 115, 22, 0.26);
+  border-radius: 18px;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 237, 213, 0.82),
+    rgba(255, 255, 255, 0.92)
+  );
+}
+
+.calendar-invite-helper-box strong {
+  display: block;
+  color: #7c2d12;
+  margin-bottom: 4px;
+}
+
+.calendar-invite-helper-box p {
+  margin: 0;
+  color: #9a3412;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.calendar-invite-helper-box .btn {
+  white-space: nowrap;
+}
+
+@media (max-width: 720px) {
+  .calendar-invite-helper-box {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .calendar-invite-helper-box .btn {
+    width: 100%;
+  }
+}
+/* Fix leggibilità box evento su invito nel popup calendario */
+.calendar-popup .calendar-invite-helper-box {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 14px !important;
+  align-items: stretch !important;
+  padding: 16px !important;
+}
+
+.calendar-popup .calendar-invite-helper-box strong {
+  font-size: 0.98rem !important;
+  line-height: 1.25 !important;
+}
+
+.calendar-popup .calendar-invite-helper-box p {
+  font-size: 0.88rem !important;
+  line-height: 1.45 !important;
+  max-width: 100% !important;
+}
+
+.calendar-popup .calendar-invite-helper-box .btn {
+  width: 100% !important;
+  justify-content: center !important;
+  text-align: center !important;
+  white-space: normal !important;
+}
+/* Inviti ricevuti */
+.received-invites-section {
+  display: grid;
+  gap: 16px;
+  margin-bottom: 24px;
+  padding: 22px;
+  border: 1px solid rgba(249, 115, 22, 0.22);
+  border-radius: 28px;
+  background:
+    linear-gradient(135deg, rgba(255, 237, 213, 0.66), rgba(255, 255, 255, 0.88)),
+    rgba(255, 255, 255, 0.72);
+  box-shadow: 0 20px 50px rgba(249, 115, 22, 0.08);
+}
+
+.received-invites-header h2 {
+  margin: 8px 0 6px;
+  color: #0f172a;
+}
+
+.received-invites-header p {
+  margin: 0;
+  color: #64748b;
+  line-height: 1.5;
+}
+
+.received-invites-list {
+  display: grid;
+  gap: 14px;
+}
+
+.received-invite-card {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 18px;
+  border: 1px solid rgba(249, 115, 22, 0.22);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.88);
+}
+
+.received-invite-card h3 {
+  margin: 0;
+}
+
+.received-invite-owner {
+  margin: 12px 0 0;
+  color: #64748b;
+}
+
+.received-invite-owner strong {
+  color: #7c2d12;
+}
+
+.received-invite-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.invite-mail-button {
+  margin-top: 12px;
+}
+
+@media (max-width: 760px) {
+  .received-invite-card {
+    flex-direction: column;
+  }
+
+  .received-invite-actions {
+    width: 100%;
+  }
+
+  .received-invite-actions .btn {
+    flex: 1;
+  }
+}
+/* Gestione inviti evento su invito */
+.invite-management-box {
+  display: grid;
+  gap: 16px;
+  margin-top: 16px;
+  padding: 18px;
+  border: 1px solid rgba(249, 115, 22, 0.24);
+  border-radius: 22px;
+  background:
+    linear-gradient(135deg, rgba(255, 237, 213, 0.72), rgba(255, 255, 255, 0.92)),
+    rgba(255, 255, 255, 0.78);
+}
+
+.invite-management-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.invite-management-header strong {
+  display: block;
+  color: #7c2d12;
+  font-size: 1rem;
+  margin-bottom: 4px;
+}
+
+.invite-management-header p {
+  margin: 0;
+  color: #9a3412;
+  line-height: 1.45;
+  font-size: 0.9rem;
+}
+
+.invite-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.invite-stat-card {
+  padding: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.86);
+}
+
+.invite-stat-card span {
+  display: block;
+  color: #64748b;
+  font-size: 0.78rem;
+  font-weight: 800;
+  margin-bottom: 4px;
+}
+
+.invite-stat-card strong {
+  color: #0f172a;
+  font-size: 1.35rem;
+}
+
+.invite-stat-card.accepted {
+  border-color: rgba(22, 163, 74, 0.22);
+  background: rgba(220, 252, 231, 0.72);
+}
+
+.invite-stat-card.pending {
+  border-color: rgba(249, 115, 22, 0.24);
+  background: rgba(255, 237, 213, 0.72);
+}
+
+.invite-stat-card.declined {
+  border-color: rgba(220, 38, 38, 0.18);
+  background: rgba(254, 226, 226, 0.68);
+}
+
+.invite-groups {
+  display: grid;
+  gap: 12px;
+}
+
+.invite-group {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border-radius: 18px;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.invite-group.accepted {
+  border-color: rgba(22, 163, 74, 0.2);
+}
+
+.invite-group.pending {
+  border-color: rgba(249, 115, 22, 0.22);
+}
+
+.invite-group.declined {
+  border-color: rgba(220, 38, 38, 0.18);
+}
+
+.invite-group.removed {
+  border-color: rgba(100, 116, 139, 0.2);
+}
+
+.invite-group-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #0f172a;
+}
+
+.invite-person-list {
+  display: grid;
+  gap: 8px;
+}
+
+.invite-person-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(248, 250, 252, 0.88);
+}
+
+.invite-person-row div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.invite-person-row strong {
+  color: #0f172a;
+  font-size: 0.9rem;
+  overflow-wrap: anywhere;
+}
+
+.invite-person-row span {
+  color: #64748b;
+  font-size: 0.8rem;
+  overflow-wrap: anywhere;
+}
+
+.invite-status-pill {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 9px;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 900;
+}
+
+.invite-status-pill.accepted {
+  color: #166534;
+  background: rgba(220, 252, 231, 0.95);
+  border: 1px solid rgba(22, 163, 74, 0.18);
+}
+
+.invite-status-pill.pending {
+  color: #9a3412;
+  background: rgba(255, 237, 213, 0.95);
+  border: 1px solid rgba(249, 115, 22, 0.22);
+}
+
+.invite-status-pill.declined {
+  color: #991b1b;
+  background: rgba(254, 226, 226, 0.95);
+  border: 1px solid rgba(220, 38, 38, 0.18);
+}
+
+.invite-status-pill.removed {
+  color: #475569;
+  background: rgba(241, 245, 249, 0.95);
+  border: 1px solid rgba(100, 116, 139, 0.18);
+}
+
+.invite-empty-text {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.88rem;
+}
+
+@media (max-width: 860px) {
+  .invite-management-header {
+    flex-direction: column;
+  }
+
+  .invite-management-header .btn {
+    width: 100%;
+  }
+
+  .invite-stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .invite-person-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 520px) {
+  .invite-stats-grid {
+    grid-template-columns: 1fr;
+  }
+}
+/* Fix leggibilità gestione inviti dentro card evento */
+.improved-event-card:has(.invite-management-box) {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 18px !important;
+}
+
+.improved-event-card:has(.invite-management-box) .event-card-main {
+  width: 100% !important;
+  min-width: 0 !important;
+}
+
+.improved-event-card:has(.invite-management-box) .improved-event-actions {
+  width: 100% !important;
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: wrap !important;
+  justify-content: flex-start !important;
+}
+
+.invite-management-box {
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.invite-management-header {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 12px !important;
+}
+
+.invite-management-header .invite-mail-button {
+  width: 100% !important;
+  justify-content: center !important;
+  text-align: center !important;
+}
+
+.invite-stats-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+}
+
+.invite-stat-card {
+  min-width: 0 !important;
+}
+
+.invite-stat-card span {
+  font-size: 0.76rem !important;
+  line-height: 1.15 !important;
+}
+
+.invite-person-row {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 8px !important;
+  align-items: start !important;
+}
+
+.invite-person-row div {
+  min-width: 0 !important;
+}
+
+.invite-person-row strong,
+.invite-person-row span {
+  word-break: break-word !important;
+  overflow-wrap: anywhere !important;
+}
+
+.invite-status-pill {
+  width: fit-content !important;
+}
