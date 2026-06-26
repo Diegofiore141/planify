@@ -10721,3 +10721,220 @@ select {
 .invite-status-pill {
   width: fit-content !important;
 }
+/* Azioni piccole nella gestione inviti */
+.invite-person-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.invite-small-action {
+  padding: 7px 10px !important;
+  font-size: 0.76rem !important;
+  min-height: auto !important;
+}
+
+@media (max-width: 720px) {
+  .invite-person-actions {
+    justify-content: flex-start;
+  }
+}
+/* Azioni piccole nella gestione inviti */
+.invite-person-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.invite-small-action {
+  padding: 7px 10px !important;
+  font-size: 0.76rem !important;
+  min-height: auto !important;
+}
+
+@media (max-width: 720px) {
+  .invite-person-actions {
+    justify-content: flex-start;
+  }
+}
+.invite-email-chip-box input {
+  flex: 1 1 180px !important;
+  min-width: 180px !important;
+  width: auto !important;
+  user-select: text !important;
+  -webkit-user-select: text !important;
+}
+
+.invite-email-chip-box {
+  cursor: text !important;
+}
+/* Fix input email inviti */
+.invite-email-chip-box {
+  cursor: text !important;
+}
+
+.invite-email-chip-box input {
+  flex: 1 1 220px !important;
+  min-width: 220px !important;
+  width: auto !important;
+  user-select: text !important;
+  -webkit-user-select: text !important;
+  pointer-events: auto !important;
+}
+
+/* Azioni piccole nella gestione inviti */
+.invite-person-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.invite-small-action {
+  padding: 7px 10px !important;
+  font-size: 0.76rem !important;
+  min-height: auto !important;
+}
+
+@media (max-width: 720px) {
+  .invite-person-actions {
+    justify-content: flex-start;
+  }
+}
+/* Fix input email inviti */
+.invite-email-chip-box {
+  cursor: text !important;
+}
+
+.invite-email-chip-box input {
+  flex: 1 1 220px !important;
+  min-width: 220px !important;
+  width: auto !important;
+  user-select: text !important;
+  -webkit-user-select: text !important;
+  pointer-events: auto !important;
+}
+
+/* Azioni piccole nella gestione inviti */
+.invite-person-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.invite-small-action {
+  padding: 7px 10px !important;
+  font-size: 0.76rem !important;
+  min-height: auto !important;
+}
+
+@media (max-width: 720px) {
+  .invite-person-actions {
+    justify-content: flex-start;
+  }
+}
+/* Fix input email inviti */
+.invite-email-chip-box {
+  cursor: text !important;
+}
+
+.invite-email-chip-box input {
+  flex: 1 1 220px !important;
+  min-width: 220px !important;
+  width: auto !important;
+  user-select: text !important;
+  -webkit-user-select: text !important;
+  pointer-events: auto !important;
+}
+
+/* Azioni piccole nella gestione inviti */
+.invite-person-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.invite-small-action {
+  padding: 7px 10px !important;
+  font-size: 0.76rem !important;
+  min-height: auto !important;
+}
+
+@media (max-width: 720px) {
+  .invite-person-actions {
+    justify-content: flex-start;
+  }
+}
+/* Fix grafica avviso modifiche personali / eventi non disponibili */
+.event-card.improved-event-card {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 18px;
+  align-items: start;
+}
+
+.event-card-main {
+  min-width: 0;
+  width: 100%;
+}
+
+.event-unavailable-box {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  margin-top: 16px;
+  padding: 16px 18px;
+  border-radius: 18px;
+}
+
+.event-unavailable-box strong {
+  display: block;
+  margin-bottom: 6px;
+}
+
+.event-unavailable-box p {
+  margin: 0;
+  line-height: 1.5;
+}
+
+.event-unavailable-box .btn {
+  margin-top: 12px;
+  width: fit-content;
+}
+
+.improved-event-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  min-width: 190px;
+}
+
+.improved-event-actions .btn {
+  white-space: nowrap;
+}
+
+/* Su schermi più piccoli metto tutto in colonna */
+@media (max-width: 900px) {
+  .event-card.improved-event-card {
+    grid-template-columns: 1fr;
+  }
+
+  .improved-event-actions {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .improved-event-actions .btn {
+    width: 100%;
+  }
+}

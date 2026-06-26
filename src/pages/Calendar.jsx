@@ -623,6 +623,7 @@ function Calendar() {
             sourcePublicEventId: eventItem.sourcePublicEventId || '',
             sourceInviteEventId: eventItem.sourceInviteEventId || '',
             sourceOwnerId: eventItem.sourceOwnerId || '',
+            hasPersonalChanges: Boolean(eventItem.hasPersonalChanges),
             calendarEventKind: eventKind,
             publicSourceMissing,
           },
@@ -898,10 +899,19 @@ function Calendar() {
           date: newDate,
         }
 
+        const shouldMarkPersonalChanges =
+          (item.sourcePublicEventId || item.sourceInviteEventId) &&
+          item.sourceOwnerId !== userId
+
         if (!info.event.allDay && item.time) {
           const newTime = formatTime(newStartDate)
           updatedEvent.time = newTime
           localUpdatedEvent.time = newTime
+        }
+
+        if (shouldMarkPersonalChanges) {
+          updatedEvent.hasPersonalChanges = true
+          localUpdatedEvent.hasPersonalChanges = true
         }
 
         batch.update(eventRef, updatedEvent)
@@ -1017,6 +1027,7 @@ function Calendar() {
           visibility: 'public',
           sourcePublicEventId: publicEventRef.id,
           sourceOwnerId: userId,
+          hasPersonalChanges: false,
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
         })
@@ -1027,6 +1038,7 @@ function Calendar() {
           sourcePublicEventId: '',
           sourceInviteEventId: '',
           sourceOwnerId: '',
+          hasPersonalChanges: false,
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
         })
@@ -1136,8 +1148,12 @@ function Calendar() {
         isCopiedInviteEvent ||
         isUnavailablePublicEvent
       ) {
+        const shouldMarkPersonalChanges =
+          isCopiedPublicEvent || isCopiedInviteEvent
+
         batch.update(eventRef, {
           ...eventData,
+          hasPersonalChanges: shouldMarkPersonalChanges,
           updatedAt: serverTimestamp(),
         })
 
@@ -1145,12 +1161,13 @@ function Calendar() {
 
         updateLocalEvent(selectedItem.originalId, {
           ...eventData,
+          hasPersonalChanges: shouldMarkPersonalChanges,
         })
 
         setCalendarMessage(
           isUnavailablePublicEvent
             ? 'Copia personale aggiornata. L’evento pubblico originale non è più disponibile.'
-            : 'Copia personale aggiornata correttamente.'
+            : 'Copia personale aggiornata. Ora stai usando modifiche personali.'
         )
 
         closePopup()
@@ -1171,6 +1188,7 @@ function Calendar() {
             sourcePublicEventId: selectedItem.sourcePublicEventId,
             sourceInviteEventId: '',
             sourceOwnerId: userId,
+            hasPersonalChanges: false,
             updatedAt: serverTimestamp(),
           })
 
@@ -1192,6 +1210,7 @@ function Calendar() {
             sourcePublicEventId: selectedItem.sourcePublicEventId,
             sourceInviteEventId: '',
             sourceOwnerId: userId,
+            hasPersonalChanges: false,
           })
         } else {
           if (isOwnedInviteEvent) {
@@ -1212,6 +1231,7 @@ function Calendar() {
             sourcePublicEventId: publicEventRef.id,
             sourceInviteEventId: '',
             sourceOwnerId: userId,
+            hasPersonalChanges: false,
             updatedAt: serverTimestamp(),
           })
 
@@ -1237,6 +1257,7 @@ function Calendar() {
             sourcePublicEventId: publicEventRef.id,
             sourceInviteEventId: '',
             sourceOwnerId: userId,
+            hasPersonalChanges: false,
           })
         }
       } else if (eventForm.visibility === 'invite' && isOwnedInviteEvent) {
@@ -1252,6 +1273,7 @@ function Calendar() {
           sourcePublicEventId: '',
           sourceInviteEventId: selectedItem.sourceInviteEventId,
           sourceOwnerId: userId,
+          hasPersonalChanges: false,
           updatedAt: serverTimestamp(),
         })
 
@@ -1273,6 +1295,7 @@ function Calendar() {
           sourcePublicEventId: '',
           sourceInviteEventId: selectedItem.sourceInviteEventId,
           sourceOwnerId: userId,
+          hasPersonalChanges: false,
         })
       } else {
         if (isOwnedPublicEvent) {
@@ -1320,6 +1343,7 @@ function Calendar() {
           sourcePublicEventId: '',
           sourceInviteEventId: '',
           sourceOwnerId: '',
+          hasPersonalChanges: false,
           updatedAt: serverTimestamp(),
         })
 
@@ -1331,6 +1355,7 @@ function Calendar() {
           sourcePublicEventId: '',
           sourceInviteEventId: '',
           sourceOwnerId: '',
+          hasPersonalChanges: false,
         })
       }
 
@@ -2212,17 +2237,21 @@ function Calendar() {
                             ? 'calendar-popup-badge holiday-popup-badge'
                             : selectedItem.publicSourceMissing
                               ? 'calendar-popup-badge unavailable'
-                              : selectedItem.sourceInviteEventId
-                                ? 'calendar-popup-badge invite'
-                                : 'calendar-popup-badge'
+                              : selectedItem.hasPersonalChanges
+                                ? 'calendar-popup-badge unavailable'
+                                : selectedItem.sourceInviteEventId
+                                  ? 'calendar-popup-badge invite'
+                                  : 'calendar-popup-badge'
                       }
                     >
                       {selectedItem.type === 'event'
                         ? selectedItem.publicSourceMissing
                           ? 'Evento non più pubblico'
-                          : selectedItem.sourceInviteEventId
-                            ? 'Evento su invito'
-                            : 'Evento'
+                          : selectedItem.hasPersonalChanges
+                            ? 'Modifiche personali'
+                            : selectedItem.sourceInviteEventId
+                              ? 'Evento su invito'
+                              : 'Evento'
                         : selectedItem.type === 'holiday'
                           ? 'Festività'
                           : `Attività · Priorità ${getPriorityLabel(
@@ -2288,6 +2317,21 @@ function Calendar() {
                 {!isEditing && selectedItem.type === 'event' && (
                   <>
                     <div className="calendar-popup-content">
+                      {selectedItem.hasPersonalChanges && (
+                        <div className="event-unavailable-box">
+                          <strong>Modifiche personali attive</strong>
+                          <p>
+                            Questo evento è stato modificato rispetto alla
+                            versione del creatore. Per ripristinare i dati
+                            ufficiali, apri la pagina Eventi.
+                          </p>
+
+                          <Link to="/events" className="btn btn-secondary">
+                            Vai a Eventi
+                          </Link>
+                        </div>
+                      )}
+
                       {selectedItem.publicSourceMissing && (
                         <div className="event-unavailable-box">
                           <strong>Evento pubblico non più disponibile</strong>

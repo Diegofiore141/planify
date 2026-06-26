@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router'
 import {
   arrayRemove,
@@ -110,7 +110,7 @@ function createInvitedPeople(invitedEmails, ownerEmail, previousPeople = []) {
           email,
           role: previousPerson.role || 'participant',
           status: shouldReinvite ? 'invited' : previousPerson.status,
-          invitedAt: previousPerson.invitedAt || invitedAt,
+          invitedAt,
           removedAt: shouldReinvite ? '' : previousPerson.removedAt || '',
           declinedAt: shouldReinvite ? '' : previousPerson.declinedAt || '',
         }
@@ -128,16 +128,6 @@ function createInvitedPeople(invitedEmails, ownerEmail, previousPeople = []) {
         declinedAt: '',
       }
     })
-}
-
-function getInviteSourceEvent(eventItem, inviteEvents) {
-  if (!eventItem.sourceInviteEventId) return null
-
-  return (
-    inviteEvents.find(
-      (inviteEvent) => inviteEvent.id === eventItem.sourceInviteEventId
-    ) || null
-  )
 }
 
 function getInvitePeopleGroups(eventItem) {
@@ -172,33 +162,39 @@ function getInvitePersonDisplayName(person) {
   return 'Invitato'
 }
 
+function getInvitePersonByEmail(eventItem, email) {
+  const normalizedEmail = normalizeEmail(email)
+
+  return (
+    eventItem.invitedPeople?.find(
+      (person) => normalizeEmail(person.email || '') === normalizedEmail
+    ) || null
+  )
+}
+
 function getEventVisibilityLabel(
   eventItem,
   userId,
   isPublicSourceMissing,
-  isInviteSourceMissing = false
+  isInviteSourceMissing = false,
+  inviteSourceEvent = null,
+  publicSourceEvent = null
 ) {
-  if (isPublicSourceMissing) {
-    return 'Non più pubblico'
-  }
+  if (isPublicSourceMissing) return 'Non più pubblico'
+  if (isInviteSourceMissing) return 'Invito non più disponibile'
 
-  if (isInviteSourceMissing) {
-    return 'Invito non più disponibile'
-  }
-
-  if (eventItem.sourceInviteEventId && eventItem.sourceOwnerId === userId) {
+  if (eventItem.sourceInviteEventId && inviteSourceEvent?.ownerId === userId) {
     return 'Su invito'
   }
 
-  if (eventItem.sourceInviteEventId && eventItem.sourceOwnerId !== userId) {
+  if (eventItem.sourceInviteEventId && inviteSourceEvent?.ownerId !== userId) {
     return 'Invitato'
   }
 
-  if (eventItem.sourcePublicEventId && eventItem.sourceOwnerId === userId) {
-    return 'Pubblico'
-  }
+  if (eventItem.sourcePublicEventId) {
+    const publicOwnerId = publicSourceEvent?.ownerId || eventItem.sourceOwnerId
 
-  if (eventItem.sourcePublicEventId && eventItem.sourceOwnerId !== userId) {
+    if (publicOwnerId === userId) return 'Pubblico'
     return 'Da Esplora'
   }
 
@@ -209,25 +205,24 @@ function getEventVisibilityClass(
   eventItem,
   userId,
   isPublicSourceMissing,
-  isInviteSourceMissing = false
+  isInviteSourceMissing = false,
+  inviteSourceEvent = null,
+  publicSourceEvent = null
 ) {
-  if (isPublicSourceMissing || isInviteSourceMissing) {
-    return 'unavailable'
-  }
+  if (isPublicSourceMissing || isInviteSourceMissing) return 'unavailable'
 
-  if (eventItem.sourceInviteEventId && eventItem.sourceOwnerId === userId) {
+  if (eventItem.sourceInviteEventId && inviteSourceEvent?.ownerId === userId) {
     return 'invite'
   }
 
-  if (eventItem.sourceInviteEventId && eventItem.sourceOwnerId !== userId) {
+  if (eventItem.sourceInviteEventId && inviteSourceEvent?.ownerId !== userId) {
     return 'invited'
   }
 
-  if (eventItem.sourcePublicEventId && eventItem.sourceOwnerId === userId) {
-    return 'public'
-  }
+  if (eventItem.sourcePublicEventId) {
+    const publicOwnerId = publicSourceEvent?.ownerId || eventItem.sourceOwnerId
 
-  if (eventItem.sourcePublicEventId && eventItem.sourceOwnerId !== userId) {
+    if (publicOwnerId === userId) return 'public'
     return 'explore'
   }
 
@@ -267,6 +262,7 @@ function buildInviteEmailBody(eventItem, ownerName) {
 
 function Events() {
   const { user } = useAuth()
+  const inviteInputRef = useRef(null)
 
   const userId = user?.uid || ''
   const userEmail = user?.email || ''
@@ -380,25 +376,86 @@ function Events() {
     return new Set(publicEvents.map((eventItem) => eventItem.id))
   }, [publicEvents])
 
-  const inviteEventIds = useMemo(() => {
-    return new Set(inviteEvents.map((eventItem) => eventItem.id))
-  }, [inviteEvents])
+  const savedInviteEventsBySourceId = useMemo(() => {
+    const savedEventsMap = new Map()
 
-  const savedInviteEventIds = useMemo(() => {
-    return new Set(events.map((eventItem) => eventItem.sourceInviteEventId).filter(Boolean))
+    events.forEach((eventItem) => {
+      if (eventItem.sourceInviteEventId) {
+        savedEventsMap.set(eventItem.sourceInviteEventId, eventItem)
+      }
+    })
+
+    return savedEventsMap
   }, [events])
+
+  function getPublicSourceEvent(eventItem) {
+    if (!eventItem?.sourcePublicEventId) return null
+
+    return (
+      publicEvents.find(
+        (publicEvent) => publicEvent.id === eventItem.sourcePublicEventId
+      ) || null
+    )
+  }
+
+  function getInviteSourceEvent(eventItem) {
+    if (!eventItem?.sourceInviteEventId) return null
+
+    return (
+      inviteEvents.find(
+        (inviteEvent) => inviteEvent.id === eventItem.sourceInviteEventId
+      ) || null
+    )
+  }
+
+  function getOfficialSourceEvent(eventItem) {
+    if (eventItem?.sourceInviteEventId) {
+      return getInviteSourceEvent(eventItem)
+    }
+
+    if (eventItem?.sourcePublicEventId) {
+      return getPublicSourceEvent(eventItem)
+    }
+
+    return null
+  }
+
+  function hasPersonalChanges(eventItem) {
+    return Boolean(
+      eventItem?.hasPersonalChanges &&
+        (eventItem.sourceInviteEventId || eventItem.sourcePublicEventId)
+    )
+  }
+
+  function getEventDisplayData(eventItem) {
+    const officialSourceEvent = getOfficialSourceEvent(eventItem)
+
+    if (officialSourceEvent && !hasPersonalChanges(eventItem)) {
+      return officialSourceEvent
+    }
+
+    return eventItem
+  }
 
   function isPublicSourceMissing(eventItem) {
     if (!eventItem.sourcePublicEventId) return false
-
     return !publicEventIds.has(eventItem.sourcePublicEventId)
   }
 
   function isInviteSourceMissing(eventItem) {
     if (!eventItem.sourceInviteEventId) return false
-    if (eventItem.sourceOwnerId === userId) return false
 
-    return !inviteEventIds.has(eventItem.sourceInviteEventId)
+    const inviteSourceEvent = getInviteSourceEvent(eventItem)
+
+    if (!inviteSourceEvent) return true
+    if (inviteSourceEvent.ownerId === userId) return false
+
+    const currentUserInvite = getInvitePersonByEmail(inviteSourceEvent, userEmail)
+
+    return (
+      currentUserInvite?.status === 'removed' ||
+      currentUserInvite?.status === 'declined'
+    )
   }
 
   const pendingInvites = useMemo(() => {
@@ -406,7 +463,6 @@ function Events() {
 
     return inviteEvents
       .filter((inviteEvent) => inviteEvent.ownerId !== userId)
-      .filter((inviteEvent) => !savedInviteEventIds.has(inviteEvent.id))
       .filter((inviteEvent) => {
         const invitedPerson = inviteEvent.invitedPeople?.find(
           (person) => normalizeEmail(person.email || '') === normalizedUserEmail
@@ -425,10 +481,17 @@ function Events() {
 
         return firstDate.localeCompare(secondDate)
       })
-  }, [inviteEvents, savedInviteEventIds, userEmail, userId])
+  }, [inviteEvents, userEmail, userId])
 
-  const futureEvents = events.filter((eventItem) => eventItem.date >= today)
-  const pastEvents = events.filter((eventItem) => eventItem.date < today)
+  const futureEvents = events.filter((eventItem) => {
+    const displayEvent = getEventDisplayData(eventItem)
+    return displayEvent.date >= today
+  })
+
+  const pastEvents = events.filter((eventItem) => {
+    const displayEvent = getEventDisplayData(eventItem)
+    return displayEvent.date < today
+  })
 
   const savedInviteEvents = events.filter(
     (eventItem) => eventItem.sourceInviteEventId
@@ -445,31 +508,40 @@ function Events() {
   const visibleEvents = useMemo(() => {
     return events
       .filter((eventItem) => {
-        if (filter === 'future') return eventItem.date >= today
-        if (filter === 'past') return eventItem.date < today
+        const displayEvent = getEventDisplayData(eventItem)
+
+        if (filter === 'future') return displayEvent.date >= today
+        if (filter === 'past') return displayEvent.date < today
         return true
       })
       .sort((firstEvent, secondEvent) => {
-        const firstDate = `${firstEvent.date || '9999-12-31'}T${
-          firstEvent.time || '00:00'
+        const firstDisplayEvent = getEventDisplayData(firstEvent)
+        const secondDisplayEvent = getEventDisplayData(secondEvent)
+
+        const firstDate = `${firstDisplayEvent.date || '9999-12-31'}T${
+          firstDisplayEvent.time || '00:00'
         }`
 
-        const secondDate = `${secondEvent.date || '9999-12-31'}T${
-          secondEvent.time || '00:00'
+        const secondDate = `${secondDisplayEvent.date || '9999-12-31'}T${
+          secondDisplayEvent.time || '00:00'
         }`
 
         return firstDate.localeCompare(secondDate)
       })
-  }, [events, filter, today])
+  }, [events, filter, inviteEvents, publicEvents, today])
 
   const editingEvent = events.find((eventItem) => eventItem.id === editEventId)
+  const editingInviteSourceEvent = getInviteSourceEvent(editingEvent)
+  const editingPublicSourceEvent = getPublicSourceEvent(editingEvent)
 
   const isEditingCopiedPublicEvent = Boolean(
-    editingEvent?.sourcePublicEventId && editingEvent?.sourceOwnerId !== userId
+    editingEvent?.sourcePublicEventId &&
+      editingPublicSourceEvent?.ownerId !== userId
   )
 
   const isEditingCopiedInviteEvent = Boolean(
-    editingEvent?.sourceInviteEventId && editingEvent?.sourceOwnerId !== userId
+    editingEvent?.sourceInviteEventId &&
+      editingInviteSourceEvent?.ownerId !== userId
   )
 
   const isEditingUnavailablePublicEvent = Boolean(
@@ -508,6 +580,8 @@ function Events() {
   }
 
   function handleInviteEmailKeyDown(event) {
+    if (event.metaKey || event.ctrlKey || event.altKey) return
+
     const shouldCreateChip =
       event.key === 'Enter' ||
       event.key === 'Tab' ||
@@ -652,8 +726,8 @@ function Events() {
       return
     }
 
-    if (savedInviteEventIds.has(inviteEvent.id)) {
-      setError('Hai già aggiunto questo invito al tuo calendario.')
+    if (inviteEvent.ownerId === userId) {
+      setError('Sei il creatore di questo evento.')
       return
     }
 
@@ -661,7 +735,14 @@ function Events() {
       const batch = writeBatch(db)
 
       const inviteEventRef = doc(db, 'inviteEvents', inviteEvent.id)
-      const personalEventRef = doc(collection(db, 'users', userId, 'events'))
+
+      const existingPersonalEvent = savedInviteEventsBySourceId.get(
+        inviteEvent.id
+      )
+
+      const personalEventRef = existingPersonalEvent
+        ? doc(db, 'users', userId, 'events', existingPersonalEvent.id)
+        : doc(collection(db, 'users', userId, 'events'))
 
       const joinedAt = new Date().toISOString()
 
@@ -674,6 +755,13 @@ function Events() {
         joinedAt,
       }
 
+      const previousParticipant = inviteEvent.participants?.find(
+        (participantItem) =>
+          participantItem.uid === userId ||
+          normalizeEmail(participantItem.email || '') ===
+            normalizeEmail(userEmail)
+      )
+
       const updatedInvitedPeople = inviteEvent.invitedPeople?.map((person) => {
         const isCurrentUser =
           normalizeEmail(person.email || '') === normalizeEmail(userEmail)
@@ -684,7 +772,7 @@ function Events() {
           ...person,
           uid: userId,
           name: userName,
-          role: person.role || 'participant',
+          role: 'participant',
           status: 'accepted',
           joinedAt,
           declinedAt: '',
@@ -692,31 +780,42 @@ function Events() {
         }
       })
 
-      batch.set(personalEventRef, {
-        title: inviteEvent.title || '',
-        date: inviteEvent.date || '',
-        time: inviteEvent.time || '',
-        location: inviteEvent.location || '',
-        description: inviteEvent.description || '',
-        visibility: 'invite',
-        sourcePublicEventId: '',
-        sourceInviteEventId: inviteEvent.id,
-        sourceOwnerId: inviteEvent.ownerId || inviteEvent.sourceOwnerId || '',
-        ownerName: inviteEvent.ownerName || '',
-        ownerEmail: inviteEvent.ownerEmail || '',
-        invitedEmails: inviteEvent.invitedEmails || [],
-        invitedPeople: updatedInvitedPeople || inviteEvent.invitedPeople || [],
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      })
+      batch.set(
+        personalEventRef,
+        {
+          title: inviteEvent.title || '',
+          date: inviteEvent.date || '',
+          time: inviteEvent.time || '',
+          location: inviteEvent.location || '',
+          description: inviteEvent.description || '',
+          visibility: 'invite',
+          sourcePublicEventId: '',
+          sourceInviteEventId: inviteEvent.id,
+          sourceOwnerId: inviteEvent.ownerId || '',
+          ownerName: inviteEvent.ownerName || '',
+          ownerEmail: inviteEvent.ownerEmail || '',
+          invitedEmails: [],
+          invitedPeople: [],
+          participantRole: 'participant',
+          hasPersonalChanges: false,
+          createdAt: existingPersonalEvent?.createdAt || serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        },
+        { merge: true }
+      )
 
-      batch.update(inviteEventRef, {
+      const updateData = {
         invitedPeople: updatedInvitedPeople || [],
         participantIds: arrayUnion(userId),
-        participants: arrayUnion(participant),
-        participantCount: increment(1),
         updatedAt: serverTimestamp(),
-      })
+      }
+
+      if (!previousParticipant) {
+        updateData.participants = arrayUnion(participant)
+        updateData.participantCount = increment(1)
+      }
+
+      batch.update(inviteEventRef, updateData)
 
       await batch.commit()
 
@@ -733,6 +832,11 @@ function Events() {
 
     if (!userId || !userEmail) {
       setError('Devi essere autenticato per rifiutare un invito.')
+      return
+    }
+
+    if (inviteEvent.ownerId === userId) {
+      setError('Sei il creatore di questo evento.')
       return
     }
 
@@ -757,10 +861,25 @@ function Events() {
         }
       })
 
-      batch.update(inviteEventRef, {
+      const participantToRemove = inviteEvent.participants?.find(
+        (participantItem) =>
+          participantItem.uid === userId ||
+          normalizeEmail(participantItem.email || '') ===
+            normalizeEmail(userEmail)
+      )
+
+      const updateData = {
         invitedPeople: updatedInvitedPeople || [],
+        participantIds: arrayRemove(userId),
         updatedAt: serverTimestamp(),
-      })
+      }
+
+      if (participantToRemove) {
+        updateData.participants = arrayRemove(participantToRemove)
+        updateData.participantCount = increment(-1)
+      }
+
+      batch.update(inviteEventRef, updateData)
 
       await batch.commit()
 
@@ -768,6 +887,166 @@ function Events() {
     } catch (declineError) {
       console.error(declineError)
       setError('Errore durante il rifiuto dell’invito.')
+    }
+  }
+
+  async function handleRemoveInviteParticipant(inviteEvent, personToRemove) {
+    setError('')
+    setMessage('')
+
+    if (!inviteEvent?.id || !personToRemove?.email) {
+      setError('Partecipante non valido.')
+      return
+    }
+
+    if (inviteEvent.ownerId !== userId) {
+      setError('Solo il creatore può rimuovere un partecipante.')
+      return
+    }
+
+    try {
+      const batch = writeBatch(db)
+      const inviteEventRef = doc(db, 'inviteEvents', inviteEvent.id)
+
+      const removedAt = new Date().toISOString()
+
+      const updatedInvitedPeople = inviteEvent.invitedPeople?.map((person) => {
+        const isTarget =
+          normalizeEmail(person.email || '') ===
+          normalizeEmail(personToRemove.email || '')
+
+        if (!isTarget) return person
+
+        return {
+          ...person,
+          status: 'removed',
+          removedAt,
+          declinedAt: '',
+        }
+      })
+
+      const participantToRemove = inviteEvent.participants?.find(
+        (participant) =>
+          participant.uid === personToRemove.uid ||
+          normalizeEmail(participant.email || '') ===
+            normalizeEmail(personToRemove.email || '')
+      )
+
+      const updateData = {
+        invitedPeople: updatedInvitedPeople || [],
+        updatedAt: serverTimestamp(),
+      }
+
+      if (personToRemove.uid) {
+        updateData.participantIds = arrayRemove(personToRemove.uid)
+      }
+
+      if (participantToRemove) {
+        updateData.participants = arrayRemove(participantToRemove)
+        updateData.participantCount = increment(-1)
+      }
+
+      batch.update(inviteEventRef, updateData)
+
+      await batch.commit()
+
+      setMessage('Partecipante rimosso dall’evento.')
+    } catch (removeError) {
+      console.error(removeError)
+      setError('Errore durante la rimozione del partecipante.')
+    }
+  }
+
+  async function handleReinvitePerson(inviteEvent, personToReinvite) {
+    setError('')
+    setMessage('')
+
+    if (!inviteEvent?.id || !personToReinvite?.email) {
+      setError('Invitato non valido.')
+      return
+    }
+
+    if (inviteEvent.ownerId !== userId) {
+      setError('Solo il creatore può reinvitare una persona.')
+      return
+    }
+
+    try {
+      const batch = writeBatch(db)
+      const inviteEventRef = doc(db, 'inviteEvents', inviteEvent.id)
+
+      const invitedAt = new Date().toISOString()
+
+      const updatedInvitedPeople = inviteEvent.invitedPeople?.map((person) => {
+        const isTarget =
+          normalizeEmail(person.email || '') ===
+          normalizeEmail(personToReinvite.email || '')
+
+        if (!isTarget) return person
+
+        return {
+          ...person,
+          status: 'invited',
+          invitedAt,
+          declinedAt: '',
+          removedAt: '',
+        }
+      })
+
+      batch.update(inviteEventRef, {
+        invitedPeople: updatedInvitedPeople || [],
+        updatedAt: serverTimestamp(),
+      })
+
+      await batch.commit()
+
+      setMessage(
+        'Invito inviato nuovamente. La persona potrà accettare o rifiutare.'
+      )
+    } catch (reinviteError) {
+      console.error(reinviteError)
+      setError('Errore durante il reinvito.')
+    }
+  }
+
+  async function handleRestoreOfficialData(eventItem) {
+    setError('')
+    setMessage('')
+
+    const officialSourceEvent = getOfficialSourceEvent(eventItem)
+
+    if (!officialSourceEvent) {
+      setError('Evento originale non disponibile.')
+      return
+    }
+
+    try {
+      const batch = writeBatch(db)
+      const personalEventRef = doc(db, 'users', userId, 'events', eventItem.id)
+
+      batch.update(personalEventRef, {
+        title: officialSourceEvent.title || '',
+        date: officialSourceEvent.date || '',
+        time: officialSourceEvent.time || '',
+        location: officialSourceEvent.location || '',
+        description: officialSourceEvent.description || '',
+        hasPersonalChanges: false,
+        updatedAt: serverTimestamp(),
+      })
+
+      await batch.commit()
+
+      clearEventWeather(eventItem.id)
+      clearEventReminder(eventItem.id)
+
+      if (editEventId === eventItem.id) {
+        resetForm()
+      }
+
+      setMessage('Dati del creatore ripristinati.')
+    } catch (restoreError) {
+      console.error(restoreError)
+      setError('Errore durante il ripristino dei dati del creatore.')
     }
   }
 
@@ -784,12 +1063,46 @@ function Events() {
       return
     }
 
-    if (visibility === 'invite' && inviteEmailInput.trim()) {
+    const eventToEditBeforeValidation = editEventId
+      ? events.find((eventItem) => eventItem.id === editEventId)
+      : null
+
+    const inviteSourceBeforeValidation = getInviteSourceEvent(
+      eventToEditBeforeValidation
+    )
+
+    const publicSourceBeforeValidation = getPublicSourceEvent(
+      eventToEditBeforeValidation
+    )
+
+    const isEditingCopiedPublicBeforeValidation = Boolean(
+      eventToEditBeforeValidation?.sourcePublicEventId &&
+        publicSourceBeforeValidation?.ownerId !== userId
+    )
+
+    const isEditingCopiedInviteBeforeValidation = Boolean(
+      eventToEditBeforeValidation?.sourceInviteEventId &&
+        inviteSourceBeforeValidation?.ownerId !== userId
+    )
+
+    const isEditingPersonalCopyBeforeValidation =
+      isEditingCopiedPublicBeforeValidation ||
+      isEditingCopiedInviteBeforeValidation
+
+    if (
+      visibility === 'invite' &&
+      !isEditingPersonalCopyBeforeValidation &&
+      inviteEmailInput.trim()
+    ) {
       addInviteEmailsFromText(inviteEmailInput)
       return
     }
 
-    if (visibility === 'invite' && inviteEmails.length === 0) {
+    if (
+      visibility === 'invite' &&
+      !isEditingPersonalCopyBeforeValidation &&
+      inviteEmails.length === 0
+    ) {
       setError('Inserisci almeno una email invitata diversa dalla tua.')
       return
     }
@@ -826,24 +1139,25 @@ function Events() {
           (eventItem) => eventItem.id === editEventId
         )
 
-        const inviteSourceEvent = getInviteSourceEvent(eventToEdit, inviteEvents)
+        const inviteSourceEvent = getInviteSourceEvent(eventToEdit)
+        const publicSourceEvent = getPublicSourceEvent(eventToEdit)
 
         const isOwnedPublicEvent =
           eventToEdit?.sourcePublicEventId &&
-          eventToEdit?.sourceOwnerId === userId &&
+          publicSourceEvent?.ownerId === userId &&
           !isPublicSourceMissing(eventToEdit)
 
         const isOwnedInviteEvent =
           eventToEdit?.sourceInviteEventId &&
-          eventToEdit?.sourceOwnerId === userId
+          inviteSourceEvent?.ownerId === userId
 
         const isCopiedPublicEvent =
           eventToEdit?.sourcePublicEventId &&
-          eventToEdit?.sourceOwnerId !== userId
+          publicSourceEvent?.ownerId !== userId
 
         const isCopiedInviteEvent =
           eventToEdit?.sourceInviteEventId &&
-          eventToEdit?.sourceOwnerId !== userId
+          inviteSourceEvent?.ownerId !== userId
 
         const isUnavailablePublicEvent =
           eventToEdit && isPublicSourceMissing(eventToEdit)
@@ -859,6 +1173,8 @@ function Events() {
         ) {
           batch.update(eventRef, {
             ...eventData,
+            hasPersonalChanges:
+              isCopiedPublicEvent || isCopiedInviteEvent ? true : false,
             updatedAt: serverTimestamp(),
           })
 
@@ -872,7 +1188,7 @@ function Events() {
               ? 'Copia personale aggiornata. L’evento pubblico originale non è più disponibile.'
               : isUnavailableInviteEvent
                 ? 'Copia personale aggiornata. L’evento su invito originale non è più disponibile.'
-                : 'Copia personale aggiornata correttamente.'
+                : 'Copia personale aggiornata. Ora stai usando modifiche personali.'
           )
 
           resetForm()
@@ -895,6 +1211,8 @@ function Events() {
               sourceOwnerId: userId,
               invitedEmails: [],
               invitedPeople: [],
+              participantRole: 'owner',
+              hasPersonalChanges: false,
               updatedAt: serverTimestamp(),
             })
 
@@ -922,6 +1240,8 @@ function Events() {
               sourceOwnerId: userId,
               invitedEmails: [],
               invitedPeople: [],
+              participantRole: 'owner',
+              hasPersonalChanges: false,
               updatedAt: serverTimestamp(),
             })
 
@@ -976,6 +1296,8 @@ function Events() {
               sourceOwnerId: userId,
               invitedEmails,
               invitedPeople,
+              participantRole: 'owner',
+              hasPersonalChanges: false,
               updatedAt: serverTimestamp(),
             })
 
@@ -1002,6 +1324,8 @@ function Events() {
               sourceOwnerId: userId,
               invitedEmails,
               invitedPeople,
+              participantRole: 'owner',
+              hasPersonalChanges: false,
               updatedAt: serverTimestamp(),
             })
 
@@ -1044,6 +1368,8 @@ function Events() {
             sourceOwnerId: '',
             invitedEmails: [],
             invitedPeople: [],
+            participantRole: 'owner',
+            hasPersonalChanges: false,
             updatedAt: serverTimestamp(),
           })
         }
@@ -1083,6 +1409,10 @@ function Events() {
           sourcePublicEventId: publicEventRef.id,
           sourceInviteEventId: '',
           sourceOwnerId: userId,
+          invitedEmails: [],
+          invitedPeople: [],
+          participantRole: 'owner',
+          hasPersonalChanges: false,
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
         })
@@ -1122,6 +1452,8 @@ function Events() {
           sourceOwnerId: userId,
           invitedEmails,
           invitedPeople,
+          participantRole: 'owner',
+          hasPersonalChanges: false,
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
         })
@@ -1134,6 +1466,8 @@ function Events() {
           sourceOwnerId: '',
           invitedEmails: [],
           invitedPeople: [],
+          participantRole: 'owner',
+          hasPersonalChanges: false,
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
         })
@@ -1157,29 +1491,34 @@ function Events() {
   }
 
   function handleStartEdit(eventItem) {
-    const inviteSourceEvent = getInviteSourceEvent(eventItem, inviteEvents)
+    const inviteSourceEvent = getInviteSourceEvent(eventItem)
+    const publicSourceEvent = getPublicSourceEvent(eventItem)
+    const officialSourceEvent = getOfficialSourceEvent(eventItem)
     const eventForInviteData = inviteSourceEvent || eventItem
+    const displayEvent = getEventDisplayData(eventItem)
 
     setEditEventId(eventItem.id)
-    setTitle(eventItem.title || '')
-    setDate(eventItem.date || '')
-    setTime(eventItem.time || '')
-    setLocation(eventItem.location || '')
-    setDescription(eventItem.description || '')
+    setTitle(displayEvent.title || '')
+    setDate(displayEvent.date || '')
+    setTime(displayEvent.time || '')
+    setLocation(displayEvent.location || '')
+    setDescription(displayEvent.description || '')
     setInviteEmails(getInviteEmailsFromEvent(eventForInviteData, userEmail))
     setInviteEmailInput('')
 
     if (
       eventItem.sourcePublicEventId &&
-      eventItem.sourceOwnerId === userId &&
+      publicSourceEvent?.ownerId === userId &&
       !isPublicSourceMissing(eventItem)
     ) {
       setVisibility('public')
     } else if (
       eventItem.sourceInviteEventId &&
-      eventItem.sourceOwnerId === userId
+      inviteSourceEvent?.ownerId === userId
     ) {
       setVisibility('invite')
+    } else if (officialSourceEvent) {
+      setVisibility(eventItem.visibility || 'private')
     } else {
       setVisibility(eventItem.visibility || 'private')
     }
@@ -1207,17 +1546,26 @@ function Events() {
     }
 
     try {
+      const displayEvent = getEventDisplayData(eventToKeep)
+
       const batch = writeBatch(db)
 
       const personalEventRef = doc(db, 'users', userId, 'events', eventId)
 
       batch.update(personalEventRef, {
+        title: displayEvent.title || '',
+        date: displayEvent.date || '',
+        time: displayEvent.time || '',
+        location: displayEvent.location || '',
+        description: displayEvent.description || '',
         visibility: 'private',
         sourcePublicEventId: '',
         sourceInviteEventId: '',
         sourceOwnerId: '',
         invitedEmails: [],
         invitedPeople: [],
+        participantRole: 'owner',
+        hasPersonalChanges: false,
         updatedAt: serverTimestamp(),
       })
 
@@ -1258,34 +1606,34 @@ function Events() {
 
         const publicEventSnapshot = await getDoc(publicEventRef)
 
-        if (eventToDelete.sourceOwnerId === userId) {
-          if (publicEventSnapshot.exists()) {
-            batch.delete(publicEventRef)
-          }
-        } else if (publicEventSnapshot.exists()) {
+        if (publicEventSnapshot.exists()) {
           const publicEventData = publicEventSnapshot.data()
 
-          const participantToRemove = publicEventData.participants?.find(
-            (participantItem) => participantItem.uid === userId
-          )
+          if (publicEventData.ownerId === userId) {
+            batch.delete(publicEventRef)
+          } else {
+            const participantToRemove = publicEventData.participants?.find(
+              (participantItem) => participantItem.uid === userId
+            )
 
-          const participantCount =
-            publicEventData.participantCount ||
-            publicEventData.participantIds?.length ||
-            publicEventData.participants?.length ||
-            0
+            const participantCount =
+              publicEventData.participantCount ||
+              publicEventData.participantIds?.length ||
+              publicEventData.participants?.length ||
+              0
 
-          const updateData = {
-            participantIds: arrayRemove(userId),
-            participantCount: Math.max(participantCount - 1, 0),
-            updatedAt: serverTimestamp(),
+            const updateData = {
+              participantIds: arrayRemove(userId),
+              participantCount: Math.max(participantCount - 1, 0),
+              updatedAt: serverTimestamp(),
+            }
+
+            if (participantToRemove) {
+              updateData.participants = arrayRemove(participantToRemove)
+            }
+
+            batch.update(publicEventRef, updateData)
           }
-
-          if (participantToRemove) {
-            updateData.participants = arrayRemove(participantToRemove)
-          }
-
-          batch.update(publicEventRef, updateData)
         }
       }
 
@@ -1298,53 +1646,48 @@ function Events() {
 
         const inviteEventSnapshot = await getDoc(inviteEventRef)
 
-        if (eventToDelete.sourceOwnerId === userId) {
-          if (inviteEventSnapshot.exists()) {
-            batch.delete(inviteEventRef)
-          }
-        } else if (inviteEventSnapshot.exists()) {
+        if (inviteEventSnapshot.exists()) {
           const inviteEventData = inviteEventSnapshot.data()
 
-          const updatedInvitedPeople = inviteEventData.invitedPeople?.map(
-            (person) => {
-              const isCurrentUser =
-                person.uid === userId ||
-                normalizeEmail(person.email || '') === normalizeEmail(userEmail)
+          if (inviteEventData.ownerId === userId) {
+            batch.delete(inviteEventRef)
+          } else {
+            const updatedInvitedPeople = inviteEventData.invitedPeople?.map(
+              (person) => {
+                const isCurrentUser =
+                  person.uid === userId ||
+                  normalizeEmail(person.email || '') ===
+                    normalizeEmail(userEmail)
 
-              if (!isCurrentUser) return person
+                if (!isCurrentUser) return person
 
-              return {
-                ...person,
-                uid: person.uid || userId,
-                name: person.name || userName,
-                status: 'declined',
-                declinedAt: new Date().toISOString(),
+                return {
+                  ...person,
+                  uid: person.uid || userId,
+                  name: person.name || userName,
+                  status: 'declined',
+                  declinedAt: new Date().toISOString(),
+                }
               }
+            )
+
+            const participantToRemove = inviteEventData.participants?.find(
+              (participantItem) => participantItem.uid === userId
+            )
+
+            const updateData = {
+              invitedPeople: updatedInvitedPeople || [],
+              participantIds: arrayRemove(userId),
+              updatedAt: serverTimestamp(),
             }
-          )
 
-          const participantToRemove = inviteEventData.participants?.find(
-            (participantItem) => participantItem.uid === userId
-          )
+            if (participantToRemove) {
+              updateData.participants = arrayRemove(participantToRemove)
+              updateData.participantCount = increment(-1)
+            }
 
-          const participantCount =
-            inviteEventData.participantCount ||
-            inviteEventData.participantIds?.length ||
-            inviteEventData.participants?.length ||
-            0
-
-          const updateData = {
-            invitedPeople: updatedInvitedPeople || [],
-            participantIds: arrayRemove(userId),
-            participantCount: Math.max(participantCount - 1, 0),
-            updatedAt: serverTimestamp(),
+            batch.update(inviteEventRef, updateData)
           }
-
-          if (participantToRemove) {
-            updateData.participants = arrayRemove(participantToRemove)
-          }
-
-          batch.update(inviteEventRef, updateData)
         }
       }
 
@@ -1361,10 +1704,9 @@ function Events() {
 
       setMessage(
         eventToDelete?.sourcePublicEventId &&
-          eventToDelete?.sourceOwnerId !== userId
+          getPublicSourceEvent(eventToDelete)?.ownerId !== userId
           ? 'Evento rimosso dal tuo calendario e partecipazione annullata.'
-          : eventToDelete?.sourceInviteEventId &&
-              eventToDelete?.sourceOwnerId !== userId
+          : eventToDelete?.sourceInviteEventId
             ? 'Evento rimosso dal tuo calendario.'
             : 'Evento eliminato.'
       )
@@ -1389,12 +1731,14 @@ function Events() {
       return
     }
 
-    if (!eventItem.location) {
+    const displayEvent = getEventDisplayData(eventItem)
+
+    if (!displayEvent.location) {
       setWeatherError('Inserisci un luogo per vedere il meteo.')
       return
     }
 
-    if (!eventItem.date || !eventItem.time) {
+    if (!displayEvent.date || !displayEvent.time) {
       setWeatherError('Inserisci data e ora per vedere il meteo previsto.')
       return
     }
@@ -1406,9 +1750,9 @@ function Events() {
 
     try {
       const weather = await getWeatherForCity(
-        eventItem.location,
-        eventItem.date,
-        eventItem.time
+        displayEvent.location,
+        displayEvent.date,
+        displayEvent.time
       )
 
       setWeatherByEvent((previousWeather) => ({
@@ -1441,7 +1785,9 @@ function Events() {
       return
     }
 
-    if (!eventItem.date || !eventItem.time) {
+    const displayEvent = getEventDisplayData(eventItem)
+
+    if (!displayEvent.date || !displayEvent.time) {
       setReminderError('Inserisci data e ora per attivare il promemoria.')
       return
     }
@@ -1464,7 +1810,10 @@ function Events() {
         clearTimeout(scheduledReminders[eventItem.id])
       }
 
-      const timeoutId = scheduleEventNotification(eventItem)
+      const timeoutId = scheduleEventNotification({
+        ...displayEvent,
+        id: eventItem.id,
+      })
 
       setScheduledReminders((previousReminders) => ({
         ...previousReminders,
@@ -1473,7 +1822,7 @@ function Events() {
 
       setReminderByEvent((previousMessages) => ({
         ...previousMessages,
-        [eventItem.id]: `Promemoria attivo per le ${eventItem.time}`,
+        [eventItem.id]: `Promemoria attivo per le ${displayEvent.time}`,
       }))
 
       setMessage('Promemoria attivato correttamente.')
@@ -1636,9 +1985,9 @@ function Events() {
           <div className="events-public-warning">
             <strong>Ci sono eventi su invito non più disponibili</strong>
             <p>
-              Alcuni eventi su invito sono stati eliminati dal creatore. Puoi
-              mantenerli come eventi privati nel tuo calendario oppure
-              rimuoverli.
+              Alcuni eventi su invito sono stati eliminati dal creatore oppure
+              la tua partecipazione è stata rimossa o rifiutata. Puoi mantenerli
+              come eventi privati nel tuo calendario oppure rimuoverli.
             </p>
           </div>
         )}
@@ -1712,9 +2061,10 @@ function Events() {
               <div className="event-visibility-info unavailable">
                 <strong>Evento su invito non più disponibile</strong>
                 <p>
-                  L’evento originale è stato eliminato dal creatore. Puoi
-                  modificare questa copia personale, mantenerla come evento
-                  privato oppure eliminarla dal tuo calendario.
+                  L’evento originale è stato eliminato dal creatore oppure la tua
+                  partecipazione è stata rimossa o rifiutata. Puoi modificare
+                  questa copia personale, mantenerla come evento privato oppure
+                  eliminarla dal tuo calendario.
                 </p>
               </div>
             ) : isEditingCopiedPublicEvent || isEditingCopiedInviteEvent ? (
@@ -1725,8 +2075,8 @@ function Events() {
                     : 'Evento aggiunto da Esplora eventi'}
                 </strong>
                 <p>
-                  Stai modificando solo la tua copia personale. L’evento
-                  originale non viene modificato.
+                  Stai modificando la tua copia personale. L’evento originale
+                  del creatore non viene modificato.
                 </p>
               </div>
             ) : (
@@ -1804,7 +2154,10 @@ function Events() {
                   <div className="invite-email-field">
                     <span>Email invitate</span>
 
-                    <div className="invite-email-chip-box">
+                    <div
+                      className="invite-email-chip-box"
+                      onClick={() => inviteInputRef.current?.focus()}
+                    >
                       {inviteEmails.map((email) => (
                         <span className="invite-email-chip" key={email}>
                           {email}
@@ -1820,6 +2173,7 @@ function Events() {
                       ))}
 
                       <input
+                        ref={inviteInputRef}
                         type="text"
                         placeholder={
                           inviteEmails.length === 0
@@ -1842,6 +2196,7 @@ function Events() {
 
                     <p>
                       Premi Invio, Tab, spazio o virgola per aggiungere l’email.
+                      Puoi anche incollare più email insieme.
                     </p>
                   </div>
                 )}
@@ -1926,17 +2281,28 @@ function Events() {
               </div>
             ) : (
               visibleEvents.map((eventItem) => {
-                const isPast = eventItem.date < today
                 const publicSourceMissing = isPublicSourceMissing(eventItem)
                 const inviteSourceMissing = isInviteSourceMissing(eventItem)
                 const isInviteEvent = Boolean(eventItem.sourceInviteEventId)
 
-                const inviteSourceEvent = getInviteSourceEvent(
-                  eventItem,
-                  inviteEvents
-                )
+                const inviteSourceEvent = getInviteSourceEvent(eventItem)
+                const publicSourceEvent = getPublicSourceEvent(eventItem)
+                const officialSourceEvent = getOfficialSourceEvent(eventItem)
 
                 const inviteDisplayEvent = inviteSourceEvent || eventItem
+                const displayEvent = getEventDisplayData(eventItem)
+
+                const isPast = displayEvent.date < today
+
+                const isCurrentUserInviteOwner =
+                  isInviteEvent &&
+                  Boolean(inviteSourceEvent) &&
+                  inviteSourceEvent.ownerId === userId
+
+                const hasPersonalVersion =
+                  hasPersonalChanges(eventItem) &&
+                  Boolean(officialSourceEvent) &&
+                  officialSourceEvent.ownerId !== userId
 
                 const eventInviteEmails = getInviteEmailsFromEvent(
                   inviteDisplayEvent,
@@ -1961,32 +2327,36 @@ function Events() {
                       <div className="event-card-top">
                         <div>
                           <div className="event-title-row">
-                            <h3>{eventItem.title}</h3>
+                            <h3>{displayEvent.title}</h3>
 
                             <span
                               className={`event-visibility-pill ${getEventVisibilityClass(
                                 eventItem,
                                 userId,
                                 publicSourceMissing,
-                                inviteSourceMissing
+                                inviteSourceMissing,
+                                inviteSourceEvent,
+                                publicSourceEvent
                               )}`}
                             >
                               {getEventVisibilityLabel(
                                 eventItem,
                                 userId,
                                 publicSourceMissing,
-                                inviteSourceMissing
+                                inviteSourceMissing,
+                                inviteSourceEvent,
+                                publicSourceEvent
                               )}
                             </span>
                           </div>
 
                           <div className="event-meta-pills">
                             <span className="event-date-pill">
-                              {formatDateLabel(eventItem.date)}
+                              {formatDateLabel(displayEvent.date)}
                             </span>
 
                             <span className="event-time-pill">
-                              {eventItem.time || 'Ora non specificata'}
+                              {displayEvent.time || 'Ora non specificata'}
                             </span>
 
                             {isPast && (
@@ -2011,14 +2381,26 @@ function Events() {
                         <div className="event-unavailable-box">
                           <strong>Evento su invito non più disponibile</strong>
                           <p>
-                            L’evento originale è stato eliminato dal creatore.
-                            Puoi mantenerlo come evento privato nel tuo
-                            calendario oppure rimuoverlo.
+                            L’evento originale è stato eliminato dal creatore
+                            oppure la tua partecipazione è stata rimossa o
+                            rifiutata. Puoi mantenerlo come evento privato nel
+                            tuo calendario oppure rimuoverlo.
                           </p>
                         </div>
                       )}
 
-                      {isInviteEvent && eventItem.sourceOwnerId === userId && (
+                      {hasPersonalVersion && (
+                        <div className="event-unavailable-box">
+                          <strong>Modifiche personali attive</strong>
+                          <p>
+                            Stai visualizzando la tua versione personale
+                            dell’evento. Le modifiche del creatore restano
+                            disponibili e puoi ripristinarle quando vuoi.
+                          </p>
+                        </div>
+                      )}
+
+                      {isCurrentUserInviteOwner && (
                         <div className="invite-management-box">
                           <div className="invite-management-header">
                             <div>
@@ -2089,9 +2471,24 @@ function Events() {
                                         <span>{person.email}</span>
                                       </div>
 
-                                      <span className="invite-status-pill accepted">
-                                        Accettato
-                                      </span>
+                                      <div className="invite-person-actions">
+                                        <span className="invite-status-pill accepted">
+                                          Accettato
+                                        </span>
+
+                                        <button
+                                          type="button"
+                                          className="btn btn-danger invite-small-action"
+                                          onClick={() =>
+                                            handleRemoveInviteParticipant(
+                                              inviteDisplayEvent,
+                                              person
+                                            )
+                                          }
+                                        >
+                                          Rimuovi
+                                        </button>
+                                      </div>
                                     </div>
                                   ))}
                                 </div>
@@ -2155,9 +2552,24 @@ function Events() {
                                         <span>{person.email}</span>
                                       </div>
 
-                                      <span className="invite-status-pill declined">
-                                        Rifiutato
-                                      </span>
+                                      <div className="invite-person-actions">
+                                        <span className="invite-status-pill declined">
+                                          Rifiutato
+                                        </span>
+
+                                        <button
+                                          type="button"
+                                          className="btn btn-secondary invite-small-action"
+                                          onClick={() =>
+                                            handleReinvitePerson(
+                                              inviteDisplayEvent,
+                                              person
+                                            )
+                                          }
+                                        >
+                                          Reinvita
+                                        </button>
+                                      </div>
                                     </div>
                                   ))}
                                 </div>
@@ -2188,9 +2600,24 @@ function Events() {
                                         <span>{person.email}</span>
                                       </div>
 
-                                      <span className="invite-status-pill removed">
-                                        Rimosso
-                                      </span>
+                                      <div className="invite-person-actions">
+                                        <span className="invite-status-pill removed">
+                                          Rimosso
+                                        </span>
+
+                                        <button
+                                          type="button"
+                                          className="btn btn-secondary invite-small-action"
+                                          onClick={() =>
+                                            handleReinvitePerson(
+                                              inviteDisplayEvent,
+                                              person
+                                            )
+                                          }
+                                        >
+                                          Reinvita
+                                        </button>
+                                      </div>
                                     </div>
                                   ))}
                                 </div>
@@ -2200,13 +2627,15 @@ function Events() {
                         </div>
                       )}
 
-                      {eventItem.location && (
-                        <p className="event-location">📍 {eventItem.location}</p>
+                      {displayEvent.location && (
+                        <p className="event-location">
+                          📍 {displayEvent.location}
+                        </p>
                       )}
 
-                      {eventItem.description && (
+                      {displayEvent.description && (
                         <p className="event-description">
-                          {eventItem.description}
+                          {displayEvent.description}
                         </p>
                       )}
 
@@ -2223,7 +2652,7 @@ function Events() {
                             </p>
                           </div>
 
-                          <span>{eventItem.time}</span>
+                          <span>{displayEvent.time}</span>
                         </div>
                       )}
 
@@ -2266,6 +2695,16 @@ function Events() {
                         Promemoria
                       </button>
 
+                      {hasPersonalVersion && (
+                        <button
+                          type="button"
+                          className="btn btn-secondary"
+                          onClick={() => handleRestoreOfficialData(eventItem)}
+                        >
+                          Ripristina dati del creatore
+                        </button>
+                      )}
+
                       {(publicSourceMissing || inviteSourceMissing) && (
                         <button
                           type="button"
@@ -2283,8 +2722,8 @@ function Events() {
                       >
                         {publicSourceMissing || inviteSourceMissing
                           ? 'Rimuovi dal calendario'
-                          : eventItem.sourceInviteEventId &&
-                              eventItem.sourceOwnerId !== userId
+                          : eventItem.sourceInviteEventId ||
+                              eventItem.sourcePublicEventId
                             ? 'Rimuovi dal calendario'
                             : 'Elimina'}
                       </button>
