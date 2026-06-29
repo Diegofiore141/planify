@@ -253,7 +253,7 @@ Per visualizzare la build in locale:
 ```bash
 npm run preview
 ```
-
+f
 ## Configurazione Firebase
 
 Il progetto utilizza Firebase per autenticazione, database e analytics.
