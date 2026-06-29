@@ -1,16 +1,281 @@
-# React + Vite
+# Planify
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Planify è una Progressive Web App sviluppata in React per la gestione di eventi, attività e promemoria.
 
-Currently, two official plugins are available:
+L’app permette agli utenti di registrarsi, accedere alla propria area personale, creare eventi privati, pubblici o su invito, visualizzarli in un calendario interattivo e ricevere notifiche/promemoria.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Il progetto è stato realizzato come applicazione web moderna utilizzando React, Firebase e funzionalità PWA.
 
-## React Compiler
+## Tecnologie utilizzate
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- React
+- Vite
+- React Router
+- Firebase Authentication
+- Cloud Firestore
+- Firebase Analytics
+- FullCalendar
+- Vite PWA
+- CSS personalizzato
+- API esterna per il meteo
 
-## Expanding the ESLint configuration
+## Funzionalità principali
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+### Autenticazione
+
+Planify utilizza Firebase Authentication per gestire:
+
+- registrazione con email e password
+- conferma password
+- verifica email obbligatoria
+- login
+- logout
+- accesso con Google
+- recupero password
+
+Dopo la registrazione, l’utente riceve una email di verifica. Finché l’indirizzo email non viene verificato, l’utente non può accedere alle pagine protette dell’applicazione.
+
+### Area personale
+
+Ogni utente autenticato accede a una dashboard personale da cui può raggiungere le principali sezioni dell’app:
+
+- eventi
+- attività
+- calendario
+- notifiche
+- note
+- esplora eventi
+
+Le route principali sono protette tramite un componente `ProtectedRoute`, che impedisce l’accesso agli utenti non autenticati o con email non verificata.
+
+### Gestione eventi
+
+Planify permette di creare tre tipi di eventi:
+
+- eventi privati
+- eventi pubblici
+- eventi su invito
+
+Gli eventi privati sono visibili solo all’utente che li crea.
+
+Gli eventi pubblici vengono salvati in una collezione condivisa e possono essere visualizzati dagli altri utenti nella pagina “Esplora eventi”.
+
+Gli eventi su invito permettono al creatore di specificare una lista di email invitate.
+
+### Eventi pubblici
+
+Gli eventi pubblici sono visibili agli utenti autenticati nella pagina “Esplora eventi”.
+
+Un utente può aggiungere un evento pubblico al proprio calendario personale. In questo caso viene creata una copia personale dell’evento, collegata alla versione ufficiale creata dal proprietario.
+
+### Eventi su invito
+
+Gli eventi su invito permettono al creatore di invitare altri utenti tramite email.
+
+Gli utenti invitati possono:
+
+- visualizzare l’invito
+- accettare l’evento
+- rifiutare l’evento
+- aggiungerlo al proprio calendario
+- modificarne la copia personale
+
+### Copie personali degli eventi
+
+Quando un utente aggiunge un evento pubblico o accetta un evento su invito, Planify crea una copia personale dell’evento.
+
+La copia personale permette all’utente di personalizzare i dati dell’evento senza modificare la versione ufficiale del creatore.
+
+Per distinguere la versione ufficiale dalla copia personale, l’app utilizza i dati presenti nelle collezioni ufficiali:
+
+```txt
+publicEvents/{eventId}.ownerId
+inviteEvents/{eventId}.ownerId
+```
+
+Se l’utente modifica la propria copia personale, l’app segnala la presenza di modifiche personali e permette di ripristinare i dati originali del creatore.
+
+### Calendario
+
+Planify integra un calendario interattivo tramite FullCalendar.
+
+Nel calendario vengono mostrati:
+
+- eventi privati
+- eventi pubblici aggiunti dall’utente
+- eventi su invito accettati
+- attività
+- festività italiane
+
+Dal calendario è possibile visualizzare e modificare gli elementi. Gli eventi con modifiche personali vengono segnalati anche nella vista calendario.
+
+### Attività
+
+L’app permette di gestire attività personali con:
+
+- titolo
+- descrizione
+- data
+- priorità
+- stato completato / non completato
+
+Le attività vengono salvate nello spazio personale dell’utente e possono essere visualizzate anche nel calendario.
+
+### Note
+
+Planify include una sezione dedicata alle note personali.
+
+Le note permettono all’utente di salvare contenuti testuali e organizzarli all’interno della propria area privata.
+
+### Meteo
+
+Per gli eventi con luogo e data, l’app può mostrare informazioni meteo tramite una API esterna.
+
+Questa funzionalità permette all’utente di avere un’informazione aggiuntiva utile nella gestione degli eventi.
+
+### Notifiche e promemoria
+
+Planify supporta notifiche locali del browser per i promemoria degli eventi.
+
+L’utente può attivare un promemoria per un evento futuro e ricevere una notifica all’orario previsto, se il browser concede il permesso alle notifiche.
+
+### PWA
+
+Planify è configurata come Progressive Web App.
+
+Il progetto include:
+
+- manifest
+- service worker
+- supporto all’installazione
+- fallback offline
+- gestione base della cache
+- supporto alle notifiche del browser
+
+La configurazione PWA permette all’app di essere installata dal browser e di offrire un comportamento più simile a una applicazione nativa.
+
+## Struttura dati Firestore
+
+Le principali collezioni utilizzate sono:
+
+```txt
+users
+publicEvents
+inviteEvents
+```
+
+### Dati personali utente
+
+I dati personali sono salvati sotto:
+
+```txt
+users/{uid}
+```
+
+All’interno dell’utente possono essere presenti sottocollezioni come:
+
+```txt
+users/{uid}/events
+users/{uid}/tasks
+users/{uid}/notes
+```
+
+### Eventi pubblici
+
+Gli eventi pubblici ufficiali sono salvati in:
+
+```txt
+publicEvents
+```
+
+### Eventi su invito
+
+Gli eventi ufficiali su invito sono salvati in:
+
+```txt
+inviteEvents
+```
+
+## Sicurezza
+
+La sicurezza dell’applicazione è gestita tramite:
+
+- Firebase Authentication
+- verifica email obbligatoria
+- route protette lato React
+- regole Firestore
+- separazione dei dati personali per utente
+
+Gli utenti possono accedere solo ai propri dati personali. Gli eventi pubblici e su invito utilizzano regole dedicate per distinguere creatore, partecipanti e invitati.
+
+## Installazione del progetto
+
+Clonare il repository:
+
+```bash
+git clone <url-repository>
+```
+
+Entrare nella cartella del progetto:
+
+```bash
+cd planify
+```
+
+Installare le dipendenze:
+
+```bash
+npm install
+```
+
+Avviare il server di sviluppo:
+
+```bash
+npm run dev
+```
+
+Aprire il progetto nel browser all’indirizzo indicato dal terminale, solitamente:
+
+```txt
+http://localhost:5173
+```
+
+## Build di produzione
+
+Per generare la build finale:
+
+```bash
+npm run build
+```
+
+Per visualizzare la build in locale:
+
+```bash
+npm run preview
+```
+
+## Configurazione Firebase
+
+Il progetto utilizza Firebase per autenticazione, database e analytics.
+
+Sono utilizzati:
+
+- Firebase Authentication
+- Cloud Firestore
+- Firebase Analytics
+
+La configurazione Firebase è presente nel file:
+
+```txt
+src/services/firebase.js
+```
+
+Questo file inizializza l’app Firebase e collega Planify al progetto Firebase utilizzato durante lo sviluppo.
+
+## Obiettivo del progetto
+
+L’obiettivo di Planify è fornire una web app completa per organizzare eventi, attività e promemoria.
+
+Il progetto mostra l’integrazione tra frontend React, autenticazione Firebase, database cloud, calendario interattivo, notifiche, PWA e gestione di eventi condivisi tra utenti.
+
+Un aspetto centrale dell’app è la distinzione tra evento ufficiale del creatore e copia personale del partecipante, così da permettere agli utenti di personalizzare i propri eventi senza modificare i dati originali degli altri utenti.
