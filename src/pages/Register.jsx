@@ -38,14 +38,6 @@ function getFirebaseRegisterErrorMessage(error) {
     return 'Problema di connessione. Controlla internet e riprova.'
   }
 
-  if (error.code === 'auth/unauthorized-continue-uri') {
-    return 'Dominio non autorizzato per la verifica email. Controlla i domini autorizzati su Firebase.'
-  }
-
-  if (error.code === 'auth/invalid-continue-uri') {
-    return 'URL di verifica email non valido. Controlla la configurazione Firebase.'
-  }
-
   if (error.code === 'auth/popup-closed-by-user') {
     return 'Registrazione con Google annullata.'
   }
@@ -152,12 +144,7 @@ function Register() {
         displayName: cleanName,
       })
 
-      const actionCodeSettings = {
-        url: `${window.location.origin}/verify-email`,
-        handleCodeInApp: true,
-      }
-
-      await sendEmailVerification(createdUser, actionCodeSettings)
+      await sendEmailVerification(createdUser)
 
       await signOut(auth)
 
