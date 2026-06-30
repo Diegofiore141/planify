@@ -100,7 +100,7 @@ function App() {
         })
 
         setIsOnline(true)
-      } catch (error) {
+      } catch {
         setIsOnline(false)
       }
     }

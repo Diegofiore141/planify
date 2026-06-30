@@ -1282,6 +1282,10 @@ button {
   background: rgba(255, 255, 255, 0.94);
 }
 
+.improved-task-form {
+  align-self: start;
+}
+
 .tasks-success-message {
   margin: 0;
   padding: 12px 14px;
@@ -1449,6 +1453,10 @@ button {
 .improved-event-form,
 .improved-events-list {
   background: rgba(255, 255, 255, 0.94);
+}
+
+.improved-event-form {
+  align-self: start;
 }
 
 .event-form-row {
@@ -1639,6 +1647,16 @@ button {
 
 .improved-event-actions {
   justify-content: flex-start;
+}
+}
+
+@media (min-width: 951px) {
+.improved-task-form,
+.improved-event-form {
+  position: sticky;
+  top: 24px;
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
 }
 }
 
@@ -2464,6 +2482,8 @@ button {
 .explore-create-panel {
   position: sticky;
   top: 22px;
+  max-height: calc(100vh - 44px);
+  overflow-y: auto;
 }
 
 .explore-create-panel .explore-panel-header h2 {
@@ -2518,6 +2538,8 @@ button {
 
 .explore-create-panel {
   position: static;
+  max-height: none;
+  overflow: visible;
 }
 
 .explore-filters {
@@ -3143,7 +3165,7 @@ from {
 
 .dashboard-page {
   position: relative;
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 .dashboard-page::before {

@@ -488,11 +488,6 @@ function Events() {
     return displayEvent.date >= today
   })
 
-  const pastEvents = events.filter((eventItem) => {
-    const displayEvent = getEventDisplayData(eventItem)
-    return displayEvent.date < today
-  })
-
   const savedInviteEvents = events.filter(
     (eventItem) => eventItem.sourceInviteEventId
   )
@@ -664,7 +659,7 @@ function Events() {
       subject
     )}&body=${encodeURIComponent(body)}`
 
-    window.location.href = mailtoUrl
+    window.location.assign(mailtoUrl)
   }
 
   async function removeOwnedPublicEventIfPossible(batch, eventToEdit) {

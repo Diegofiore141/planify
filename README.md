@@ -15,9 +15,10 @@ Il progetto è stato realizzato come applicazione web moderna utilizzando React,
 - Cloud Firestore
 - Firebase Analytics
 - FullCalendar
+- TipTap
 - Vite PWA
 - CSS personalizzato
-- API esterna per il meteo
+- Open-Meteo per le informazioni meteo
 
 ## Funzionalità principali
 
@@ -114,8 +115,7 @@ Dal calendario è possibile visualizzare e modificare gli elementi. Gli eventi c
 L’app permette di gestire attività personali con:
 
 - titolo
-- descrizione
-- data
+- scadenza
 - priorità
 - stato completato / non completato
 
@@ -123,13 +123,13 @@ Le attività vengono salvate nello spazio personale dell’utente e possono esse
 
 ### Note
 
-Planify include una sezione dedicata alle note personali.
+Planify include una sezione dedicata alle note personali con editor rich text basato su TipTap.
 
-Le note permettono all’utente di salvare contenuti testuali e organizzarli all’interno della propria area privata.
+Le note permettono all’utente di salvare contenuti testuali formattati, cercarli e organizzarli all’interno della propria area privata.
 
 ### Meteo
 
-Per gli eventi con luogo e data, l’app può mostrare informazioni meteo tramite una API esterna.
+Per gli eventi con luogo e data, l’app può mostrare informazioni meteo tramite Open-Meteo.
 
 Questa funzionalità permette all’utente di avere un’informazione aggiuntiva utile nella gestione degli eventi.
 
@@ -203,10 +203,10 @@ La sicurezza dell’applicazione è gestita tramite:
 - Firebase Authentication
 - verifica email obbligatoria
 - route protette lato React
-- regole Firestore
+- regole Firestore da configurare nella console Firebase
 - separazione dei dati personali per utente
 
-Gli utenti possono accedere solo ai propri dati personali. Gli eventi pubblici e su invito utilizzano regole dedicate per distinguere creatore, partecipanti e invitati.
+Gli utenti devono poter accedere solo ai propri dati personali. Gli eventi pubblici e su invito richiedono regole dedicate per distinguere creatore, partecipanti e invitati.
 
 ## Installazione del progetto
 
@@ -253,7 +253,7 @@ Per visualizzare la build in locale:
 ```bash
 npm run preview
 ```
-f
+
 ## Configurazione Firebase
 
 Il progetto utilizza Firebase per autenticazione, database e analytics.
@@ -270,7 +270,19 @@ La configurazione Firebase è presente nel file:
 src/services/firebase.js
 ```
 
-Questo file inizializza l’app Firebase e collega Planify al progetto Firebase utilizzato durante lo sviluppo.
+Questo file legge la configurazione dalle variabili d’ambiente di Vite. Prima di avviare il progetto, creare un file `.env` locale con i valori del proprio progetto Firebase:
+
+```env
+VITE_FIREBASE_API_KEY=...
+VITE_FIREBASE_AUTH_DOMAIN=...
+VITE_FIREBASE_PROJECT_ID=...
+VITE_FIREBASE_STORAGE_BUCKET=...
+VITE_FIREBASE_MESSAGING_SENDER_ID=...
+VITE_FIREBASE_APP_ID=...
+VITE_FIREBASE_MEASUREMENT_ID=...
+```
+
+Il file `.env` non dovrebbe essere pubblicato nel repository. Le regole di sicurezza Firestore devono essere configurate separatamente nella console Firebase.
 
 ## Obiettivo del progetto
 
