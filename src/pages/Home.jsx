@@ -67,6 +67,64 @@ const previewDays = [
       },
     ],
   },
+  {
+    label: 'Condivisi',
+    title: 'Condividi senza confondere',
+    items: [
+      {
+        icon: '🌍',
+        title: 'Evento pubblico',
+        text: 'Visibile in Esplora eventi',
+      },
+      {
+        icon: '✉️',
+        title: 'Invito privato',
+        text: 'Solo per le email selezionate',
+      },
+      {
+        icon: '📝',
+        title: 'Copia personale',
+        text: 'Modifichi la tua versione',
+      },
+    ],
+  },
+]
+
+const productHighlights = [
+  {
+    value: '3 modalità',
+    label: 'privato, pubblico o solo su invito',
+  },
+  {
+    value: 'Note formattate',
+    label: 'appunti ricercabili nella tua area',
+  },
+  {
+    value: 'Copie sicure',
+    label: 'aggiungi eventi pubblici senza alterare l’originale',
+  },
+  {
+    value: 'PWA',
+    label: 'installabile, con pagina offline dedicata',
+  },
+]
+
+const workflowSteps = [
+  {
+    step: '01',
+    title: 'Pianifica',
+    text: 'Eventi, attività e scadenze restano nello stesso flusso.',
+  },
+  {
+    step: '02',
+    title: 'Condividi',
+    text: 'Scegli tra evento pubblico, privato o invito via email.',
+  },
+  {
+    step: '03',
+    title: 'Ritrova',
+    text: 'Calendario, note e notifiche aiutano a non perdere il filo.',
+  },
 ]
 
 function Home() {
@@ -191,6 +249,33 @@ function Home() {
         </div>
       </section>
 
+      <section className="home-v2-product-strip" aria-label="Funzionalità Planify">
+        <div className="home-v2-product-copy">
+          <span className="home-v2-badge">Pensata per l’uso quotidiano</span>
+
+          <h2>Una sola area per pianificare, condividere e ricordare.</h2>
+        </div>
+
+        <div className="home-v2-product-grid">
+          {productHighlights.map((item) => (
+            <article key={item.value}>
+              <strong>{item.value}</strong>
+              <span>{item.label}</span>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="home-v2-flow" aria-label="Come funziona Planify">
+        {workflowSteps.map((item) => (
+          <article key={item.step}>
+            <span>{item.step}</span>
+            <h3>{item.title}</h3>
+            <p>{item.text}</p>
+          </article>
+        ))}
+      </section>
+
       <section className="home-v2-features">
         <article>
           <span>📅</span>
@@ -215,8 +300,8 @@ function Home() {
           <span>🌤️</span>
           <h3>Meteo sugli eventi</h3>
           <p>
-            Per gli eventi con luogo, data e ora, Planify può recuperare una
-            previsione meteo tramite API esterna.
+            Quando inserisci luogo, data e ora, Planify può mostrare una
+            previsione utile per organizzarti meglio.
           </p>
         </article>
 
@@ -233,17 +318,17 @@ function Home() {
           <span>🔔</span>
           <h3>Promemoria</h3>
           <p>
-            Attiva notifiche locali per ricordarti gli eventi programmati mentre
-            Planify è aperta nel browser.
+            Attiva notifiche locali per ricordarti gli eventi programmati quando
+            il browser lo consente.
           </p>
         </article>
 
         <article>
-          <span>📲</span>
-          <h3>PWA installabile</h3>
+          <span>📝</span>
+          <h3>Note personali</h3>
           <p>
-            Planify è pensata come Progressive Web App: può essere installata e
-            include una pagina offline personalizzata.
+            Salva appunti formattati, cerca rapidamente tra le note e tieni le
+            informazioni importanti nella tua area privata.
           </p>
         </article>
       </section>
@@ -255,8 +340,8 @@ function Home() {
           <h2>Accedi alla tua area personale e inizia a pianificare.</h2>
 
           <p>
-            Dashboard, calendario, eventi, attività, notifiche ed eventi
-            pubblici sono raccolti in un’unica esperienza semplice e ordinata.
+            Dashboard, calendario, eventi, attività, note, notifiche e inviti
+            sono raccolti in un’unica esperienza semplice e ordinata.
           </p>
         </div>
 

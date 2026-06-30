@@ -1972,7 +1972,7 @@ button {
 
 .home-v2-preview-tabs {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
   margin-bottom: 18px;
   padding: 6px;
@@ -2032,6 +2032,94 @@ button {
   margin: 0;
   color: #64748b;
   font-size: 14px;
+}
+
+.home-v2-product-strip {
+  width: 100%;
+  max-width: 1250px;
+  margin: 48px auto 0;
+  padding: 28px;
+  display: grid;
+  grid-template-columns: 0.85fr 1.15fr;
+  gap: 24px;
+  align-items: center;
+  border-radius: 30px;
+  box-shadow: 0 22px 64px rgba(15, 23, 42, 0.1);
+}
+
+.home-v2-product-copy h2 {
+  max-width: 560px;
+  margin: 0;
+  color: #0f172a;
+  font-size: clamp(28px, 3vw, 42px);
+  line-height: 1.12;
+}
+
+.home-v2-product-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.home-v2-product-grid article {
+  min-height: 112px;
+  padding: 18px;
+  display: grid;
+  align-content: center;
+  gap: 7px;
+  border-radius: 20px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+.home-v2-product-grid strong {
+  color: #0f172a;
+  font-size: 18px;
+  font-weight: 950;
+}
+
+.home-v2-product-grid span {
+  color: #64748b;
+  font-size: 14px;
+  font-weight: 750;
+  line-height: 1.45;
+}
+
+.home-v2-flow {
+  width: 100%;
+  max-width: 1250px;
+  margin: 22px auto 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.home-v2-flow article {
+  min-height: 154px;
+  padding: 22px;
+  border-radius: 24px;
+  box-shadow: 0 18px 50px rgba(15, 23, 42, 0.08);
+}
+
+.home-v2-flow span {
+  display: inline-flex;
+  margin-bottom: 14px;
+  color: #2563eb;
+  font-size: 13px;
+  font-weight: 950;
+  letter-spacing: 0.04em;
+}
+
+.home-v2-flow h3 {
+  margin: 0 0 8px;
+  color: #0f172a;
+  font-size: 22px;
+}
+
+.home-v2-flow p {
+  margin: 0;
+  color: #64748b;
+  line-height: 1.6;
 }
 
 .home-v2-features {
@@ -2113,6 +2201,22 @@ button {
 
 .home-v2-highlights {
   grid-template-columns: 1fr;
+}
+
+.home-v2-product-strip {
+  grid-template-columns: 1fr;
+}
+
+.home-v2-product-grid {
+  grid-template-columns: 1fr;
+}
+
+.home-v2-flow {
+  grid-template-columns: 1fr;
+}
+
+.home-v2-preview-tabs {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .home-v2-features {
@@ -2803,6 +2907,8 @@ button {
 
 .navbar,
 .home-v2-hero,
+.home-v2-product-strip,
+.home-v2-flow,
 .home-v2-features,
 .home-v2-cta {
   position: relative;
@@ -3036,6 +3142,8 @@ button {
 
 /* Animazioni e rifiniture condivise tra Home, Explore, Events, Auth e dashboard. */
 .home-v2-hero,
+.home-v2-product-strip,
+.home-v2-flow,
 .home-v2-features,
 .home-v2-cta,
 .explore-page,
@@ -3059,6 +3167,7 @@ from {
   }
 }
 
+.home-v2-flow article,
 .home-v2-features article,
 .explore-event-card,
 .events-summary-card,
@@ -3068,11 +3177,13 @@ from {
   animation: planifyCardEnter 0.5s ease both;
 }
 
+.home-v2-flow article:nth-child(2),
 .home-v2-features article:nth-child(2),
 .explore-event-card:nth-child(2) {
   animation-delay: 0.05s;
 }
 
+.home-v2-flow article:nth-child(3),
 .home-v2-features article:nth-child(3),
 .explore-event-card:nth-child(3) {
   animation-delay: 0.1s;
@@ -3101,6 +3212,9 @@ from {
 }
 
 .home-v2-preview-card,
+.home-v2-product-strip,
+.home-v2-product-grid article,
+.home-v2-flow article,
 .home-v2-features article,
 .home-v2-cta,
 .explore-panel,
@@ -3113,6 +3227,7 @@ from {
     background 0.22s ease;
 }
 
+.home-v2-flow article:hover,
 .home-v2-features article:hover,
 .explore-event-card:hover,
 .improved-event-card:hover {
@@ -3233,6 +3348,7 @@ select {
 }
 
 .home-v2-preview-card,
+.home-v2-flow article,
 .home-v2-features article,
 .explore-event-card,
 .improved-event-card,
@@ -3241,6 +3357,7 @@ select {
 }
 
 .home-v2-preview-card:hover,
+.home-v2-flow article:hover,
 .home-v2-features article:hover,
 .explore-event-card:hover,
 .improved-event-card:hover,
@@ -3325,6 +3442,9 @@ select {
 }
 
 .home-v2-preview-card,
+.home-v2-product-strip,
+.home-v2-product-grid article,
+.home-v2-flow article,
 .home-v2-features article,
 .home-v2-cta,
 .home-v2-highlights div {
