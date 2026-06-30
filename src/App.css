@@ -1,7 +1,4 @@
-/*
-  Planify App.css - versione conservativa ripulita
-  Mantiene lo stile attuale, rimuove vecchie sezioni non usate e duplicati evidenti.
-*/
+/* Base globale, navbar pubblica e pulsanti condivisi. */
 
 * {
   box-sizing: border-box;
@@ -33,10 +30,8 @@ button {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: rgba(255, 255, 255, 0.75);
   border: 1px solid rgba(255, 255, 255, 0.9);
   border-radius: 0 0 22px 22px;
-  backdrop-filter: blur(14px);
   box-shadow: 0 18px 50px rgba(15, 23, 42, 0.08);
 }
 
@@ -69,7 +64,6 @@ button {
   font-size: 15px;
   font-weight: 700;
   cursor: pointer;
-  transition: 0.2s ease;
 }
 
 .btn-primary {
@@ -108,176 +102,10 @@ button {
   font-size: 16px;
 }
 
-.hero {
-  width: 100%;
-  max-width: 1250px;
-  margin: 55px auto 40px;
-  display: grid;
-  grid-template-columns: 1.15fr 0.85fr;
-  gap: 50px;
-  align-items: center;
-}
-
-.hero-content {
-  max-width: 680px;
-}
-
-.badge {
-  display: inline-block;
-  margin-bottom: 18px;
-  padding: 8px 14px;
-  border-radius: 999px;
-  background: #dbeafe;
-  color: #1d4ed8;
-  font-weight: 700;
-  font-size: 14px;
-}
-
-.hero h1 {
-  margin: 0;
-  font-size: clamp(42px, 6vw, 72px);
-  line-height: 1;
-  letter-spacing: -2px;
-  color: #0f172a;
-}
-
-.hero p {
-  max-width: 600px;
-  margin: 24px 0 34px;
-  font-size: 19px;
-  line-height: 1.7;
-  color: #475569;
-}
-
-.hero-buttons {
-  display: flex;
-  gap: 14px;
-  flex-wrap: wrap;
-}
-
-.preview-card {
-  background: rgba(255, 255, 255, 0.9);
-  border-radius: 28px;
-  padding: 26px;
-  box-shadow: 0 25px 70px rgba(15, 23, 42, 0.16);
-  border: 1px solid rgba(255, 255, 255, 0.9);
-}
-
-.card-header {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 24px;
-}
-
-.dot {
-  width: 12px;
-  height: 12px;
-  padding: 0;
-  border: none;
-  border-radius: 999px;
-  background: #cbd5e1;
-  cursor: pointer;
-  box-shadow: none;
-}
-
-.dot:hover {
-  background: #94a3b8;
-  transform: scale(1.15);
-}
-
-.dot.active {
-  width: 28px;
-  background: #2563eb;
-}
-
-.preview-card h3 {
-  margin: 0 0 18px;
-  font-size: 28px;
-}
-
-.task {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 16px;
-  margin-bottom: 12px;
-  border-radius: 18px;
-  background: #f8fafc;
-  border: 1px solid #e5e7eb;
-}
-
-.task span {
-  width: 36px;
-  height: 36px;
-  display: grid;
-  place-items: center;
-  border-radius: 12px;
-  background: #dbeafe;
-  color: #2563eb;
-  font-weight: 800;
-}
-
-.task strong {
-  display: block;
-  margin-bottom: 4px;
-}
-
-.task p {
-  margin: 0;
-  color: #64748b;
-  font-size: 14px;
-}
-
-.task.completed span {
-  background: #dcfce7;
-  color: #16a34a;
-}
-
-.features {
-  width: 100%;
-  max-width: 1250px;
-  margin: 45px auto 0;
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 18px;
-}
-
-.features article {
-  background: rgba(255, 255, 255, 0.75);
-  padding: 24px;
-  border-radius: 22px;
-  border: 1px solid rgba(255, 255, 255, 0.9);
-  box-shadow: 0 16px 45px rgba(15, 23, 42, 0.07);
-}
-
-.features h3 {
-  margin: 0 0 10px;
-  font-size: 22px;
-}
-
-.features p {
-  margin: 0;
-  color: #64748b;
-  line-height: 1.6;
-}
-
 @media (max-width: 850px) {
 .navbar {
   flex-direction: column;
   gap: 16px;
-}
-
-.hero {
-  grid-template-columns: 1fr;
-  margin-top: 45px;
-}
-
-.features {
-  grid-template-columns: 1fr;
-}
-
-.hero h1 {
-  font-size: 44px;
 }
 }
 
@@ -288,6 +116,7 @@ button {
   justify-content: center;
 }
 
+/* Auth legacy e contenitore dashboard base usato dalle pagine interne. */
 .auth-page,
 .dashboard-page {
   min-height: 100vh;
@@ -396,6 +225,7 @@ button {
   transform: translateY(-2px);
 }
 
+/* Events: layout base, form e lista eventi. */
 .events-layout {
   width: 100%;
   max-width: 1100px;
@@ -530,6 +360,7 @@ button {
 }
 }
 
+/* Tasks: layout base, form e lista attivita. */
 .tasks-layout {
   width: 100%;
   max-width: 1100px;
@@ -685,97 +516,7 @@ button {
   color: #334155;
 }
 
-.offline-page {
-  min-height: 100vh;
-  display: grid;
-  place-items: center;
-  padding: 24px;
-  background: radial-gradient(circle at top left, rgba(37, 99, 235, 0.18), transparent 35%),
-    linear-gradient(135deg, #eef2ff 0%, #f8fafc 50%, #e0f2fe 100%);
-}
-
-.offline-card-react {
-  width: 100%;
-  max-width: 460px;
-  padding: 34px;
-  border-radius: 24px;
-  background: rgba(255, 255, 255, 0.92);
-  box-shadow: 0 25px 70px rgba(15, 23, 42, 0.14);
-  text-align: center;
-}
-
-.offline-logo {
-  width: 82px;
-  height: 82px;
-  border-radius: 18px;
-  object-fit: cover;
-  margin-bottom: 16px;
-}
-
-.offline-card-react h1 {
-  margin: 0 0 12px;
-  font-size: 32px;
-  color: #0f172a;
-}
-
-.offline-card-react p {
-  color: #64748b;
-  line-height: 1.6;
-  margin-bottom: 24px;
-}
-
-.notifications-card {
-  width: 100%;
-  max-width: 720px;
-  background: rgba(255, 255, 255, 0.9);
-  padding: 34px;
-  border-radius: 24px;
-  box-shadow: 0 25px 70px rgba(15, 23, 42, 0.14);
-  border: 1px solid rgba(255, 255, 255, 0.9);
-}
-
-.notifications-header {
-  display: flex;
-  justify-content: space-between;
-  gap: 18px;
-  align-items: flex-start;
-  margin-bottom: 28px;
-}
-
-.notifications-header h1 {
-  margin: 0 0 10px;
-  color: #0f172a;
-  font-size: 34px;
-}
-
-.notifications-header p {
-  margin: 0;
-  color: #64748b;
-  line-height: 1.6;
-}
-
-.notification-status,
-.notifications-info {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  padding: 20px;
-  border-radius: 18px;
-  margin-bottom: 18px;
-}
-
-.notification-status h2,
-.notifications-info h2 {
-  margin: 0 0 10px;
-  color: #0f172a;
-}
-
-.notification-status p,
-.notifications-info p {
-  margin: 0;
-  color: #64748b;
-  line-height: 1.6;
-}
-
+/* Notifications inline e box accessori usati da eventi/task. */
 .notifications-actions {
   display: flex;
   gap: 12px;
@@ -790,12 +531,6 @@ button {
   background: #eff6ff;
   color: #1d4ed8;
   font-weight: 700;
-}
-
-@media (max-width: 700px) {
-.notifications-header {
-  flex-direction: column;
-}
 }
 
 .reminder-box {
@@ -815,6 +550,7 @@ button {
   color: #334155;
 }
 
+/* Calendar: struttura pagina, legenda base e tema FullCalendar. */
 .calendar-layout {
   width: 100%;
   max-width: 1200px;
@@ -838,117 +574,6 @@ button {
   margin: 0;
   color: #64748b;
   line-height: 1.6;
-}
-
-.calendar-toolbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 18px;
-  margin-bottom: 20px;
-  padding: 20px;
-  border-radius: 22px;
-  background: rgba(255, 255, 255, 0.9);
-  box-shadow: 0 18px 50px rgba(15, 23, 42, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.9);
-}
-
-.calendar-toolbar h2 {
-  margin: 0;
-  text-align: center;
-  color: #0f172a;
-  font-size: 26px;
-  text-transform: capitalize;
-}
-
-.calendar-today-button {
-  display: block;
-  margin: 8px auto 0;
-  border: 0;
-  background: transparent;
-  color: #2563eb;
-  font-weight: 800;
-  cursor: pointer;
-}
-
-.calendar-today-button:hover {
-  color: #1d4ed8;
-  text-decoration: underline;
-}
-
-.calendar-grid {
-  display: grid;
-  grid-template-columns: repeat(7, minmax(120px, 1fr));
-  gap: 10px;
-}
-
-.calendar-weekday {
-  padding: 12px;
-  border-radius: 14px;
-  background: #2563eb;
-  color: white;
-  text-align: center;
-  font-weight: 800;
-}
-
-.calendar-day {
-  min-height: 145px;
-  padding: 12px;
-  border-radius: 18px;
-  background: rgba(255, 255, 255, 0.92);
-  border: 1px solid rgba(226, 232, 240, 0.95);
-  box-shadow: 0 12px 35px rgba(15, 23, 42, 0.08);
-}
-
-.empty-day {
-  background: rgba(255, 255, 255, 0.45);
-  box-shadow: none;
-}
-
-.calendar-day-number {
-  width: 32px;
-  height: 32px;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  background: #eff6ff;
-  color: #1d4ed8;
-  font-weight: 900;
-  margin-bottom: 10px;
-}
-
-.calendar-items {
-  display: grid;
-  gap: 7px;
-}
-
-.calendar-item {
-  display: grid;
-  gap: 3px;
-  padding: 8px 10px;
-  border-radius: 12px;
-  font-size: 13px;
-  line-height: 1.3;
-}
-
-.calendar-item strong {
-  color: #0f172a;
-}
-
-.calendar-item span {
-  color: #64748b;
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.event-item {
-  background: #eff6ff;
-  border: 1px solid #bfdbfe;
-}
-
-.task-item-calendar {
-  background: #ecfdf5;
-  border: 1px solid #bbf7d0;
 }
 
 .completed-calendar-task {
@@ -984,45 +609,11 @@ button {
   border-radius: 50%;
 }
 
-.event-dot {
-  background: #2563eb;
-}
-
-.task-dot {
-  background: #22c55e;
-}
-
-@media (max-width: 1000px) {
-.calendar-grid {
-  grid-template-columns: repeat(2, minmax(140px, 1fr));
-}
-
-.calendar-weekday {
-  display: none;
-}
-}
-
 @media (max-width: 700px) {
 .calendar-header,
 .calendar-toolbar {
   flex-direction: column;
   align-items: stretch;
-}
-
-.calendar-toolbar h2 {
-  text-align: left;
-}
-
-.calendar-today-button {
-  margin-left: 0;
-}
-
-.calendar-grid {
-  grid-template-columns: 1fr;
-}
-
-.calendar-day {
-  min-height: auto;
 }
 }
 
@@ -1530,6 +1121,7 @@ button {
   min-width: 120px;
 }
 
+/* Calendar: legenda migliorata, feedback e switch creazione evento/task. */
 .improved-calendar-legend {
   align-items: center;
   justify-content: space-between;
@@ -1568,38 +1160,10 @@ button {
   border-color: #bfdbfe;
 }
 
-.low-legend-pill {
-  background: #ecfdf5;
-  color: #047857;
-  border-color: #bbf7d0;
-}
-
-.medium-legend-pill {
-  background: #fffbeb;
-  color: #b45309;
-  border-color: #fde68a;
-}
-
-.high-legend-pill {
-  background: #fef2f2;
-  color: #dc2626;
-  border-color: #fecaca;
-}
-
-.legend-divider {
-  width: 1px;
-  height: 34px;
-  background: #e2e8f0;
-}
-
 @media (max-width: 850px) {
 .improved-calendar-legend {
   align-items: flex-start;
   justify-content: flex-start;
-}
-
-.legend-divider {
-  display: none;
 }
 
 .legend-group {
@@ -1667,49 +1231,7 @@ button {
   font-weight: 900;
 }
 
-.dashboard-priority.bassa {
-  background: #ecfdf5;
-  color: #047857;
-}
-
-.dashboard-priority.media {
-  background: #fffbeb;
-  color: #b45309;
-}
-
-.dashboard-priority.alta {
-  background: #fef2f2;
-  color: #dc2626;
-}
-
-.dashboard-hero-grid {
-  display: grid;
-  grid-template-columns: 1.35fr 0.9fr;
-  gap: 22px;
-  align-items: stretch;
-}
-
-.dashboard-logout-button {
-  align-self: flex-start;
-  margin-top: 22px;
-}
-
-.quick-action-card.main-action {
-  background: #eff6ff;
-  border-color: #bfdbfe;
-}
-
-.quick-action-card.main-action span {
-  background: #2563eb;
-  color: white;
-}
-
-@media (max-width: 950px) {
-.dashboard-hero-grid {
-  grid-template-columns: 1fr;
-}
-}
-
+/* Tasks: versione migliorata con riepiloghi, filtri e card. */
 .tasks-header-actions {
   display: flex;
   gap: 12px;
@@ -1878,30 +1400,7 @@ button {
 }
 }
 
-.highlight-label {
-  display: block;
-  margin-bottom: 10px;
-  color: #2563eb;
-  font-size: 13px;
-  font-weight: 900;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.danger-stat strong {
-  color: #dc2626;
-}
-
-.dashboard-empty-box .btn {
-  justify-self: flex-start;
-  margin-top: 4px;
-}
-
-.dashboard-bottom-link {
-  display: flex;
-  justify-content: center;
-}
-
+/* Events: versione migliorata con riepiloghi, filtri, meteo e promemoria. */
 .improved-events-layout {
   max-width: 1180px;
 }
@@ -2143,6 +1642,7 @@ button {
 }
 }
 
+/* Notifications: pagina permessi e istruzioni notifiche browser. */
 .notifications-page {
   width: 100%;
   max-width: 1100px;
@@ -2337,29 +1837,7 @@ button {
 }
 }
 
-.dashboard-v3-priority.bassa {
-  background: #ecfdf5;
-  color: #047857;
-  border: 1px solid #bbf7d0;
-}
-
-.dashboard-v3-priority.media {
-  background: #fffbeb;
-  color: #b45309;
-  border: 1px solid #fde68a;
-}
-
-.dashboard-v3-priority.alta {
-  background: #fef2f2;
-  color: #dc2626;
-  border: 1px solid #fecaca;
-}
-
-.dashboard-v3-empty .btn {
-  justify-self: flex-start;
-  margin-top: 4px;
-}
-
+/* Home: hero pubblica, anteprima interattiva, feature e CTA. */
 .home-v2-hero {
   width: 100%;
   max-width: 1250px;
@@ -2379,8 +1857,6 @@ button {
   margin-bottom: 18px;
   padding: 9px 15px;
   border-radius: 999px;
-  background: #dbeafe;
-  color: #1d4ed8;
   font-size: 14px;
   font-weight: 900;
 }
@@ -2388,15 +1864,11 @@ button {
 .home-v2-content h1 {
   margin: 0;
   color: #0f172a;
-  font-size: clamp(44px, 6vw, 74px);
-  line-height: 0.98;
-  letter-spacing: -2px;
 }
 
 .home-v2-content p {
   max-width: 640px;
   margin: 24px 0 34px;
-  color: #475569;
   font-size: 19px;
   line-height: 1.7;
 }
@@ -2417,8 +1889,6 @@ button {
 .home-v2-highlights div {
   padding: 16px;
   border-radius: 18px;
-  background: rgba(255, 255, 255, 0.78);
-  border: 1px solid rgba(255, 255, 255, 0.95);
   box-shadow: 0 16px 45px rgba(15, 23, 42, 0.07);
 }
 
@@ -2437,8 +1907,6 @@ button {
 .home-v2-preview-card {
   padding: 28px;
   border-radius: 30px;
-  background: rgba(255, 255, 255, 0.94);
-  border: 1px solid rgba(255, 255, 255, 0.95);
   box-shadow: 0 30px 90px rgba(15, 23, 42, 0.16);
 }
 
@@ -2560,8 +2028,6 @@ button {
 .home-v2-features article {
   padding: 24px;
   border-radius: 24px;
-  background: rgba(255, 255, 255, 0.82);
-  border: 1px solid rgba(255, 255, 255, 0.95);
   box-shadow: 0 18px 50px rgba(15, 23, 42, 0.08);
 }
 
@@ -2598,8 +2064,6 @@ button {
   gap: 24px;
   align-items: center;
   border-radius: 30px;
-  background: rgba(255, 255, 255, 0.88);
-  border: 1px solid rgba(255, 255, 255, 0.95);
   box-shadow: 0 25px 70px rgba(15, 23, 42, 0.11);
 }
 
@@ -2614,7 +2078,6 @@ button {
 .home-v2-cta p {
   max-width: 720px;
   margin: 0;
-  color: #64748b;
   line-height: 1.6;
 }
 
@@ -2643,11 +2106,9 @@ button {
   align-items: flex-start;
 }
 
-.home-v2-content h1 {
-  font-size: 44px;
-}
 }
 
+/* Explore: ricerca, creazione e lista eventi pubblici. */
 .explore-page {
   width: 100%;
   max-width: 1250px;
@@ -2712,13 +2173,6 @@ button {
 .explore-alert.error {
   background: #fee2e2;
   color: #991b1b;
-}
-
-.explore-grid {
-  display: grid;
-  grid-template-columns: 0.88fr 1.12fr;
-  gap: 22px;
-  align-items: start;
 }
 
 .explore-panel {
@@ -2919,27 +2373,9 @@ button {
   align-items: flex-start;
 }
 
-.explore-grid {
-  grid-template-columns: 1fr;
-}
-
 .explore-form-row {
   grid-template-columns: 1fr;
 }
-}
-
-.public-events-action-card {
-  background: linear-gradient(135deg, #ecfdf5 0%, #ffffff 100%);
-  border-color: #bbf7d0;
-}
-
-.public-events-action-card .dashboard-v3-action-icon {
-  background: #16a34a;
-  color: white;
-}
-
-.public-events-action-card strong {
-  color: #15803d;
 }
 
 .explore-hero-search-first {
@@ -3074,27 +2510,6 @@ button {
   font-weight: 900;
 }
 
-.dashboard-v3-actions-grid .public-events-action-card {
-  border: 2px solid #bbf7d0;
-  background: linear-gradient(135deg, #ecfdf5 0%, #ffffff 100%);
-  box-shadow: 0 22px 60px rgba(22, 163, 74, 0.14);
-}
-
-.dashboard-v3-actions-grid .public-events-action-card .dashboard-v3-action-icon {
-  background: #16a34a;
-  color: white;
-}
-
-.dashboard-v3-actions-grid .public-events-action-card strong {
-  color: #15803d;
-}
-
-@media (min-width: 950px) {
-.dashboard-v3-actions-grid .public-events-action-card {
-  grid-column: span 2;
-}
-}
-
 @media (max-width: 1050px) {
 .explore-search-panel,
 .explore-layout-v2 {
@@ -3110,24 +2525,7 @@ button {
 }
 }
 
-.dashboard-clean-priority.alta {
-  background: #fee2e2;
-  color: #991b1b;
-  border-color: #fecaca;
-}
-
-.dashboard-clean-priority.media {
-  background: #fef3c7;
-  color: #92400e;
-  border-color: #fde68a;
-}
-
-.dashboard-clean-priority.bassa {
-  background: #dcfce7;
-  color: #166534;
-  border-color: #bbf7d0;
-}
-
+/* Events/Calendar: visibilita evento e pill private/pubbliche/esplora. */
 .event-visibility-box {
   display: grid;
   gap: 12px;
@@ -3259,6 +2657,7 @@ button {
   box-shadow: none;
 }
 
+/* FullCalendar: contenimento testo e overflow degli eventi. */
 .fc-event {
   max-width: 100%;
   overflow: hidden;
@@ -3341,6 +2740,7 @@ button {
   overflow: hidden;
 }
 
+/* Home: sfondo aurora animato. */
 .soft-aurora-background {
   position: fixed;
   inset: 0;
@@ -3352,8 +2752,6 @@ button {
 .soft-aurora-shape {
   position: absolute;
   border-radius: 999px;
-  filter: blur(70px);
-  opacity: 0.32;
   animation: softAuroraFloat 16s ease-in-out infinite alternate;
 }
 
@@ -3361,7 +2759,6 @@ button {
   width: 360px;
   height: 360px;
   top: 90px;
-  left: -90px;
   background: #60a5fa;
 }
 
@@ -3369,7 +2766,6 @@ button {
   width: 420px;
   height: 420px;
   top: 220px;
-  right: -120px;
   background: #34d399;
   animation-delay: 2s;
 }
@@ -3411,6 +2807,7 @@ button {
 }
 }
 
+/* Auth v2: login/register con pannello informativo e card form. */
 .auth-page-v2 {
   position: relative;
   min-height: 100vh;
@@ -3615,6 +3012,7 @@ button {
 }
 }
 
+/* Animazioni e rifiniture condivise tra Home, Explore, Events, Auth e dashboard. */
 .home-v2-hero,
 .home-v2-features,
 .home-v2-cta,
@@ -3643,7 +3041,6 @@ from {
 .explore-event-card,
 .events-summary-card,
 .improved-event-card,
-.task-card,
 .notification-card,
 .auth-v2-preview div {
   animation: planifyCardEnter 0.5s ease both;
@@ -3687,7 +3084,6 @@ from {
 .explore-panel,
 .explore-event-card,
 .improved-event-card,
-.task-card,
 .auth-card-v2 {
   transition: transform 0.22s ease,
     box-shadow 0.22s ease,
@@ -3697,8 +3093,7 @@ from {
 
 .home-v2-features article:hover,
 .explore-event-card:hover,
-.improved-event-card:hover,
-.task-card:hover {
+.improved-event-card:hover {
   transform: translateY(-4px);
   box-shadow: 0 28px 75px rgba(15, 23, 42, 0.14);
 }
@@ -3819,7 +3214,6 @@ select {
 .home-v2-features article,
 .explore-event-card,
 .improved-event-card,
-.task-card,
 .auth-card-v2 {
   transform: translateY(0) scale(1);
 }
@@ -3828,7 +3222,6 @@ select {
 .home-v2-features article:hover,
 .explore-event-card:hover,
 .improved-event-card:hover,
-.task-card:hover,
 .auth-card-v2:hover {
   transform: translateY(-7px) scale(1.01);
   box-shadow: 0 32px 90px rgba(15, 23, 42, 0.17);
@@ -3860,11 +3253,6 @@ select {
   transform: translateX(-70%) rotate(8deg);
   opacity: 0;
   pointer-events: none;
-}
-
-.soft-aurora-shape {
-  opacity: 0.45;
-  filter: blur(58px);
 }
 
 .dashboard-page::before {
@@ -3932,6 +3320,7 @@ select {
   color: #1d4ed8;
 }
 
+/* Calendar: colori eventi, festivita e sorgenti pubbliche/esplora. */
 .planify-calendar-holiday {
   background: #fef3c7 !important;
   border-color: #f59e0b !important;
@@ -4102,183 +3491,7 @@ select {
   color: #5b21b6 !important;
 }
 
-.notes-eyebrow {
-  display: inline-flex;
-  align-items: center;
-  width: fit-content;
-  padding: 8px 12px;
-  border-radius: 999px;
-  background: #eef2ff;
-  color: #4338ca;
-  font-size: 13px;
-  font-weight: 900;
-}
-
-.notes-small-button {
-  border: none;
-  border-radius: 999px;
-  padding: 9px 12px;
-  background: #fee2e2;
-  color: #991b1b;
-  font-weight: 900;
-  cursor: pointer;
-}
-
-.notes-count {
-  padding: 8px 12px;
-  border-radius: 999px;
-  background: #dcfce7;
-  color: #166534;
-  font-size: 13px;
-  font-weight: 900;
-  white-space: nowrap;
-}
-
-.empty-notes-box {
-  padding: 26px;
-  border-radius: 22px;
-  background: #f8fafc;
-  border: 1px dashed #cbd5e1;
-  text-align: center;
-}
-
-.empty-notes-box strong {
-  display: block;
-  color: #0f172a;
-  font-size: 18px;
-  margin-bottom: 8px;
-}
-
-.empty-notes-box p {
-  margin: 0;
-  color: #64748b;
-  font-weight: 700;
-}
-
-@media (max-width: 900px) {
-.note-item-actions .btn {
-  flex: 1;
-}
-}
-
-.notes-eyebrow {
-  display: inline-flex;
-  align-items: center;
-  width: fit-content;
-  padding: 7px 11px;
-  border-radius: 999px;
-  background: #eef2ff;
-  color: #4338ca;
-  font-size: 12px;
-  font-weight: 900;
-}
-
-.notes-sidebar-item.active {
-  border-color: #2563eb;
-  background: linear-gradient(135deg, #eff6ff, #ffffff);
-  box-shadow: 0 14px 30px rgba(37, 99, 235, 0.13);
-}
-
-.notes-editor-toolbar button.active {
-  background: #2563eb;
-  border-color: #2563eb;
-  color: white;
-}
-
-.toolbar-divider {
-  width: 1px;
-  height: 28px;
-  background: #e2e8f0;
-  margin: 0 2px;
-}
-
-@media (max-width: 950px) {
-.notes-document-actions .btn,
-.notes-document-nav .btn {
-  flex: 1;
-}
-}
-
-.notes-toolbar-group {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 5px;
-  border-radius: 16px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-}
-
-.notes-toolbar-button {
-  min-width: 68px;
-  border: 1px solid transparent;
-  border-radius: 13px;
-  background: transparent;
-  color: #334155;
-  padding: 8px 9px;
-  font-weight: 950;
-  cursor: pointer;
-  display: grid;
-  gap: 3px;
-  place-items: center;
-  transition: background 0.18s ease,
-    color 0.18s ease,
-    border-color 0.18s ease,
-    transform 0.18s ease,
-    box-shadow 0.18s ease;
-}
-
-.notes-toolbar-button:hover {
-  transform: translateY(-1px);
-  background: white;
-  border-color: #bfdbfe;
-}
-
-.notes-toolbar-button.active {
-  background: #2563eb;
-  border-color: #2563eb;
-  color: white;
-  box-shadow: 0 10px 18px rgba(37, 99, 235, 0.2);
-}
-
-.notes-toolbar-button span {
-  font-size: 10px;
-  font-weight: 900;
-  letter-spacing: -0.1px;
-}
-
-@media (max-width: 950px) {
-.notes-document-actions .btn,
-.notes-document-nav .btn {
-  flex: 1;
-}
-
-
-.notes-toolbar-button {
-  min-width: 58px;
-}
-}
-
-.notes-v3-sidebar-item.active {
-  border-color: #2563eb;
-  background: linear-gradient(135deg, #eff6ff, #ffffff);
-  box-shadow: 0 15px 32px rgba(37, 99, 235, 0.13);
-}
-
-.notes-v3-toolbar-button.active {
-  background: #2563eb;
-  border-color: #2563eb;
-  color: white;
-  box-shadow: 0 10px 20px rgba(37, 99, 235, 0.2);
-}
-
-@media (max-width: 1000px) {
-.notes-v3-nav .btn,
-.notes-v3-actions .btn {
-  flex: 1;
-}
-}
-
+/* Notes v4: editor note attuale, sidebar, toolbar e fullscreen. */
 .notes-v4-page {
   min-height: 100vh;
   padding: 0;
@@ -4833,6 +4046,7 @@ select {
   margin: 12px 0 0;
 }
 
+/* Notes: modale conferma eliminazione. */
 .notes-delete-overlay {
   position: fixed;
   inset: 0;
@@ -4935,6 +4149,7 @@ from {
 }
 }
 
+/* Dashboard Pro: dashboard attuale con navbar, hero, azioni, statistiche e pannelli. */
 .dashboard-pro-page {
   min-height: 100vh;
   padding: 0;
@@ -6102,6 +5317,7 @@ from {
     ) !important;
 }
 
+/* Calendar: legenda selezionabile, filtri e colori task/festivita. */
 .clearer-calendar-legend {
   align-items: stretch;
 }
@@ -6180,60 +5396,6 @@ from {
 .planify-calendar-task-alta .fc-event-main,
 .planify-calendar-task-alta .fc-event-title {
   color: inherit !important;
-}
-
-.calendar-view-filter-panel {
-  margin: 1rem 0;
-  padding: 1rem;
-  border-radius: 22px;
-  border: 1px solid rgba(148, 163, 184, 0.22);
-  background: rgba(255, 255, 255, 0.72);
-  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
-}
-
-.calendar-view-filter-panel p {
-  margin: 0.25rem 0 0;
-  color: #64748b;
-  font-weight: 650;
-}
-
-.calendar-view-filter-title {
-  display: block;
-  font-size: 0.82rem;
-  font-weight: 950;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: #334155;
-}
-
-.calendar-view-filter-actions,
-.calendar-view-toggle-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.55rem;
-  margin-top: 0.85rem;
-}
-
-.calendar-view-filter-button,
-.calendar-view-toggle {
-  border: 1px solid rgba(148, 163, 184, 0.35);
-  background: rgba(248, 250, 252, 0.9);
-  color: #475569;
-  border-radius: 999px;
-  padding: 0.55rem 0.9rem;
-  font-weight: 850;
-  cursor: pointer;
-  transition: transform 0.18s ease,
-    box-shadow 0.18s ease,
-    border-color 0.18s ease,
-    background 0.18s ease;
-}
-
-.calendar-view-filter-button:hover,
-.calendar-view-toggle:hover {
-  transform: translateY(-1px);
-  border-color: rgba(37, 99, 235, 0.35);
-  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.1);
 }
 
 .calendar-view-filter-button.active {
@@ -6400,32 +5562,10 @@ from {
   font-family: inherit;
 }
 
-.legend-filter-pill {
-  position: relative;
-  border: 1px solid rgba(148, 163, 184, 0.28);
-  cursor: pointer;
-  transition: transform 0.18s ease,
-    opacity 0.18s ease,
-    filter 0.18s ease,
-    box-shadow 0.18s ease,
-    border-color 0.18s ease;
-}
-
-.legend-filter-pill:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.1);
-}
-
 .legend-filter-pill.active {
   opacity: 1;
   filter: saturate(1.05);
   box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.05);
-}
-
-.legend-filter-pill.inactive {
-  opacity: 0.35;
-  filter: saturate(0.45);
-  box-shadow: none;
 }
 
 .legend-filter-pill.inactive .legend-dot {
@@ -6597,6 +5737,7 @@ from {
   transform: translateY(-1px);
 }
 
+/* Events/Calendar: avvisi eventi pubblici, indisponibili e inviti. */
 .events-public-warning,
 .event-unavailable-box,
 .event-visibility-info.unavailable {
@@ -6762,6 +5903,7 @@ from {
 }
 }
 
+/* Invite: input email a chip e stati invito. */
 .invite-email-field {
   display: grid;
   gap: 8px;
@@ -6848,29 +5990,6 @@ from {
   border: 1px solid rgba(99, 102, 241, 0.25);
 }
 
-.invite-email-readonly-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 8px;
-}
-
-.invite-email-readonly-list p {
-  margin: 0;
-}
-
-.invite-email-readonly-chip {
-  display: inline-flex;
-  align-items: center;
-  padding: 7px 11px;
-  border-radius: 999px;
-  border: 1px solid rgba(99, 102, 241, 0.18);
-  background: rgba(238, 242, 255, 0.9);
-  color: #3730a3;
-  font-size: 0.82rem;
-  font-weight: 800;
-}
-
 .event-visibility-info:has(.invite-email-readonly-list) {
   border: 1px solid rgba(99, 102, 241, 0.22) !important;
   background: rgba(238, 242, 255, 0.72) !important;
@@ -6883,12 +6002,6 @@ from {
 
 .event-visibility-info:has(.invite-email-readonly-list) p {
   color: #4338ca !important;
-}
-
-.invite-email-readonly-chip {
-  border: 1px solid rgba(99, 102, 241, 0.22) !important;
-  background: rgba(224, 231, 255, 0.95) !important;
-  color: #3730a3 !important;
 }
 
 .invite-email-chip {
@@ -7289,6 +6402,7 @@ from {
   white-space: normal !important;
 }
 
+/* Invite: inviti ricevuti e gestione partecipanti degli eventi. */
 .received-invites-section {
   display: grid;
   gap: 16px;
@@ -7665,14 +6779,6 @@ from {
 }
 }
 
-.invite-email-chip-box input {
-  flex: 1 1 180px !important;
-  min-width: 180px !important;
-  width: auto !important;
-  user-select: text !important;
-  -webkit-user-select: text !important;
-}
-
 .invite-email-chip-box {
   cursor: text !important;
 }
@@ -7686,6 +6792,7 @@ from {
   pointer-events: auto !important;
 }
 
+/* Events: layout finale card migliorata e azioni laterali. */
 .event-card.improved-event-card {
   display: grid;
   grid-template-columns: 1fr auto;
@@ -7749,6 +6856,7 @@ from {
 }
 }
 
+/* Auth: azioni testuali secondarie dentro login/register. */
 .auth-small-action {
   width: fit-content;
   border: none;
