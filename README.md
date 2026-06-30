@@ -1,10 +1,18 @@
 # Planify
 
-Planify è una Progressive Web App sviluppata in React per la gestione di eventi, attività e promemoria.
+Planify è una Progressive Web App sviluppata in React per la gestione di eventi, attività, note e promemoria.
 
 L’app permette agli utenti di registrarsi, accedere alla propria area personale, creare eventi privati, pubblici o su invito, visualizzarli in un calendario interattivo e ricevere notifiche/promemoria.
 
-Il progetto è stato realizzato come applicazione web moderna utilizzando React, Firebase e funzionalità PWA.
+Il progetto è stato realizzato come applicazione web moderna utilizzando React, Firebase, Firestore, funzionalità PWA e Firebase Hosting.
+
+## Link al progetto online
+
+Il progetto è disponibile online tramite Firebase Hosting:
+
+```txt
+https://planify-df274.web.app
+```
 
 ## Tecnologie utilizzate
 
@@ -14,6 +22,7 @@ Il progetto è stato realizzato come applicazione web moderna utilizzando React,
 - Firebase Authentication
 - Cloud Firestore
 - Firebase Analytics
+- Firebase Hosting
 - FullCalendar
 - TipTap
 - Vite PWA
@@ -203,10 +212,10 @@ La sicurezza dell’applicazione è gestita tramite:
 - Firebase Authentication
 - verifica email obbligatoria
 - route protette lato React
-- regole Firestore da configurare nella console Firebase
+- regole Firestore configurate nella console Firebase
 - separazione dei dati personali per utente
 
-Gli utenti devono poter accedere solo ai propri dati personali. Gli eventi pubblici e su invito richiedono regole dedicate per distinguere creatore, partecipanti e invitati.
+Gli utenti possono accedere solo ai propri dati personali. Gli eventi pubblici e su invito utilizzano regole dedicate per distinguere creatore, partecipanti e invitati.
 
 ## Installazione del progetto
 
@@ -254,15 +263,39 @@ Per visualizzare la build in locale:
 npm run preview
 ```
 
+## Deploy con Firebase Hosting
+
+Il progetto è stato pubblicato tramite Firebase Hosting.
+
+La cartella usata per il deploy è:
+
+```txt
+dist
+```
+
+Per effettuare un nuovo deploy dopo eventuali modifiche:
+
+```bash
+npm run build
+firebase deploy
+```
+
+Il sito pubblicato è disponibile al seguente indirizzo:
+
+```txt
+https://planify-df274.web.app
+```
+
 ## Configurazione Firebase
 
-Il progetto utilizza Firebase per autenticazione, database e analytics.
+Il progetto utilizza Firebase per autenticazione, database, analytics e hosting.
 
 Sono utilizzati:
 
 - Firebase Authentication
 - Cloud Firestore
 - Firebase Analytics
+- Firebase Hosting
 
 La configurazione Firebase è presente nel file:
 
@@ -286,8 +319,8 @@ Il file `.env` non dovrebbe essere pubblicato nel repository. Le regole di sicur
 
 ## Obiettivo del progetto
 
-L’obiettivo di Planify è fornire una web app completa per organizzare eventi, attività e promemoria.
+L’obiettivo di Planify è fornire una web app completa per organizzare eventi, attività, note e promemoria.
 
-Il progetto mostra l’integrazione tra frontend React, autenticazione Firebase, database cloud, calendario interattivo, notifiche, PWA e gestione di eventi condivisi tra utenti.
+Il progetto mostra l’integrazione tra frontend React, autenticazione Firebase, database cloud, calendario interattivo, notifiche, PWA, hosting e gestione di eventi condivisi tra utenti.
 
 Un aspetto centrale dell’app è la distinzione tra evento ufficiale del creatore e copia personale del partecipante, così da permettere agli utenti di personalizzare i propri eventi senza modificare i dati originali degli altri utenti.
