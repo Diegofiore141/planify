@@ -429,11 +429,18 @@
         statusMessage.textContent = 'Controllo connessione...'
 
         try {
-          await fetch(`/online-check.txt?time=${Date.now()}`, {
+          const response = await fetch(`/online-check.txt?time=${Date.now()}`, {
             cache: 'no-store',
+            headers: {
+              'Cache-Control': 'no-cache',
+            },
           })
 
-          window.location.reload()
+          if (!response.ok) {
+            throw new Error('Controllo connessione non riuscito.')
+          }
+
+          window.location.replace(`/?reconnect=${Date.now()}`)
         } catch (error) {
           statusMessage.textContent =
             'Sei ancora offline. Riprova quando la connessione torna disponibile.'

@@ -41,7 +41,8 @@ export default defineConfig({
       },
 
       workbox: {
-        navigateFallback: '/offline.html',
+        // Fallback SPA: React decide quando mostrare la pagina offline.
+        navigateFallback: '/index.html',
         globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
       },
     }),

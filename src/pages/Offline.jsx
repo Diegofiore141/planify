@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import logo from '../assets/logo.png'
+import { checkOnlineConnection } from '../services/connection'
 
-function Offline() {
+function Offline({ onReconnect }) {
   const [message, setMessage] = useState('')
   const [checking, setChecking] = useState(false)
 
@@ -10,20 +11,20 @@ function Offline() {
     setMessage('Controllo connessione...')
     setChecking(true)
 
-    try {
-      await fetch(`/online-check.txt?time=${Date.now()}`, {
-        cache: 'no-store',
-      })
+    const connectionWorks = await checkOnlineConnection()
 
-      window.location.reload()
-    } catch (error) {
-      console.error(error)
+    if (connectionWorks) {
+      setMessage('')
+      setChecking(false)
+      onReconnect?.()
+      return
+    } else {
       setMessage(
         'Sei ancora offline. Riprova quando la connessione torna disponibile.'
       )
-    } finally {
-      setChecking(false)
     }
+
+    setChecking(false)
   }
 
   // Evita una navigazione inutile se la connessione non e' ancora tornata.

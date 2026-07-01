@@ -1,4 +1,4 @@
-import { Component, useEffect, useState } from 'react'
+import { Component, useEffect, useRef, useState } from 'react'
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router'
 import './App.css'
 
@@ -16,6 +16,7 @@ import Notifications from './pages/Notifications'
 import Calendar from './pages/Calendar'
 import ExploreEvents from './pages/ExploreEvents'
 import Notes from './pages/Notes'
+import { checkOnlineConnection } from './services/connection'
 
 // Cattura errori di una pagina senza bloccare tutta l'app.
 class PageErrorBoundary extends Component {
@@ -88,22 +89,28 @@ function ScrollToTop() {
 
 function App() {
   const [isOnline, setIsOnline] = useState(true)
+  const failedConnectionChecksRef = useRef(0)
 
   // Controllo online/offline usato per mostrare il fallback PWA.
   useEffect(() => {
     async function checkConnection() {
       if (!navigator.onLine) {
+        failedConnectionChecksRef.current = 2
         setIsOnline(false)
         return
       }
 
-      try {
-        await fetch(`/online-check.txt?time=${Date.now()}`, {
-          cache: 'no-store',
-        })
+      const connectionWorks = await checkOnlineConnection()
 
+      if (connectionWorks) {
+        failedConnectionChecksRef.current = 0
         setIsOnline(true)
-      } catch {
+        return
+      }
+
+      failedConnectionChecksRef.current += 1
+
+      if (failedConnectionChecksRef.current >= 2) {
         setIsOnline(false)
       }
     }
@@ -131,7 +138,14 @@ function App() {
   }, [])
 
   if (!isOnline) {
-    return <Offline />
+    return (
+      <Offline
+        onReconnect={() => {
+          failedConnectionChecksRef.current = 0
+          setIsOnline(true)
+        }}
+      />
+    )
   }
 
   // Le rotte protette passano dal controllo login e verifica email.
