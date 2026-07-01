@@ -8,6 +8,7 @@ import {
   showNotification,
 } from '../services/notifications'
 
+// Traduce lo stato del browser in testo e classe visuale.
 function getPermissionInfo(permission) {
   if (permission === 'granted') {
     return {
@@ -46,6 +47,7 @@ function Notifications() {
 
   const permissionInfo = getPermissionInfo(permission)
 
+  // Chiede al browser il permesso per inviare promemoria.
   async function handleRequestPermission() {
     setMessage('')
 
@@ -78,6 +80,7 @@ function Notifications() {
     }
   }
 
+  // Verifica subito che il permesso funzioni davvero.
   function handleTestNotification() {
     setMessage('')
 

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router'
 import {
   addDoc,
@@ -13,6 +13,7 @@ import {
 import { db } from '../services/firebase'
 import { useAuth } from '../context/AuthContext'
 
+// Etichette e ordinamento delle priorita mostrate nella lista attivita.
 function getPriorityLabel(priority) {
   if (priority === 'alta') return 'Alta'
   if (priority === 'bassa') return 'Bassa'
@@ -27,6 +28,7 @@ function getPriorityWeight(priority) {
 
 function Tasks() {
   const { user } = useAuth()
+  const taskFormRef = useRef(null)
 
   const [tasks, setTasks] = useState([])
   const [text, setText] = useState('')
@@ -37,6 +39,7 @@ function Tasks() {
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
 
+  // Carica le attivita personali in tempo reale da Firestore.
   useEffect(() => {
     if (!user) return
 
@@ -54,6 +57,7 @@ function Tasks() {
     return () => unsubscribe()
   }, [user])
 
+  // Applica filtro e ordinamento per data/priorita senza modificare i dati.
   const visibleTasks = useMemo(() => {
     return tasks
       .filter((task) => {
@@ -77,6 +81,7 @@ function Tasks() {
   const openTasks = tasks.filter((task) => !task.completed)
   const highPriorityTasks = openTasks.filter((task) => task.priority === 'alta')
 
+  // Ripulisce il form dopo creazione, modifica o annullamento.
   function resetForm() {
     setText('')
     setDueDate('')
@@ -85,6 +90,20 @@ function Tasks() {
     setError('')
   }
 
+  // Su mobile porta il form in vista quando si modifica una card in basso.
+  function scrollTaskFormIntoViewOnMobile() {
+    if (typeof window === 'undefined') return
+    if (!window.matchMedia('(max-width: 768px)').matches) return
+
+    window.requestAnimationFrame(() => {
+      taskFormRef.current?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      })
+    })
+  }
+
+  // Crea una nuova attivita o aggiorna quella in modifica.
   async function handleSaveTask(event) {
     event.preventDefault()
 
@@ -124,6 +143,7 @@ function Tasks() {
     resetForm()
   }
 
+  // Azioni rapide sulle singole attivita.
   function handleStartEdit(task) {
     setEditTaskId(task.id)
     setText(task.text || '')
@@ -131,6 +151,7 @@ function Tasks() {
     setPriority(task.priority || 'media')
     setError('')
     setMessage('')
+    scrollTaskFormIntoViewOnMobile()
   }
 
   async function handleToggleCompleted(task) {
@@ -205,7 +226,11 @@ function Tasks() {
         </div>
 
         <div className="tasks-grid improved-tasks-grid">
-          <form className="task-form improved-task-form" onSubmit={handleSaveTask}>
+          <form
+            ref={taskFormRef}
+            className="task-form improved-task-form"
+            onSubmit={handleSaveTask}
+          >
             <h2>{editTaskId ? 'Modifica attività' : 'Nuova attività'}</h2>
 
             <label>

@@ -13,6 +13,7 @@ import { auth } from '../services/firebase'
 import logo from '../assets/logo.png'
 import SoftAuroraBackground from '../components/SoftAuroraBackground'
 
+// Validazione base e traduzione degli errori Firebase.
 function normalizeEmail(email) {
   return email.trim().toLowerCase()
 }
@@ -67,6 +68,7 @@ function Register() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
+  // Controlla i campi prima di creare l'utente su Firebase.
   function validateRegisterForm() {
     const cleanName = name.trim()
     const cleanEmail = normalizeEmail(email)
@@ -110,6 +112,7 @@ function Register() {
     return ''
   }
 
+  // Crea account email/password, invia verifica e forza il login dopo conferma.
   async function handleRegister(event) {
     event.preventDefault()
 
@@ -167,6 +170,7 @@ function Register() {
     }
   }
 
+  // Registrazione rapida tramite popup Google.
   async function handleGoogleRegister() {
     if (loading) return
 

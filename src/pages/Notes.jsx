@@ -20,6 +20,7 @@ import TextAlign from '@tiptap/extension-text-align'
 import { db } from '../services/firebase'
 import { useAuth } from '../context/AuthContext'
 
+// Helper per mostrare titolo, anteprima e date delle note.
 function formatNoteDate(timestamp) {
   if (!timestamp?.toDate) return 'Non ancora salvata'
 
@@ -75,6 +76,7 @@ function Notes() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
   const [isLoadingNotes, setIsLoadingNotes] = useState(true)
 
+  // Editor rich text TipTap: salva HTML e testo semplice a ogni modifica.
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -95,6 +97,7 @@ function Notes() {
     },
   })
 
+  // Crea una nota vuota e la seleziona subito nell'editor.
   const handleCreateNote = useCallback(async () => {
     if (!userId) {
       setError('Utente non trovato. Ricarica la pagina e riprova.')
@@ -135,6 +138,8 @@ function Notes() {
     }
   }, [userId, editor])
 
+  // Carica e mantiene aggiornato l'elenco note dell'utente.
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (!userId) {
       setIsLoadingNotes(false)
@@ -179,7 +184,9 @@ function Notes() {
 
     return () => unsubscribe()
   }, [userId])
+  /* eslint-enable react-hooks/set-state-in-effect */
 
+  // Supporta il link /notes?new=true usato dalle scorciatoie.
   useEffect(() => {
     if (!userId) return
 
@@ -198,6 +205,7 @@ function Notes() {
     createFromUrl()
   }, [userId, searchParams, handleCreateNote, navigate])
 
+  // Ricerca locale tra titolo e testo senza interrogare Firestore.
   const filteredNotes = useMemo(() => {
     const normalizedSearch = searchText.trim().toLowerCase()
 
@@ -218,6 +226,8 @@ function Notes() {
     return notes.find((note) => note.id === selectedNoteId) || null
   }, [notes, selectedNoteId])
 
+  // Sincronizza la nota selezionata con titolo, contenuto e editor TipTap.
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (!editor) return
 
@@ -255,7 +265,9 @@ function Notes() {
       setError('La nota aveva un contenuto non valido. Ho aperto un foglio vuoto.')
     }
   }, [selectedNote, editor])
+  /* eslint-enable react-hooks/set-state-in-effect */
 
+  // Salva titolo, HTML e testo semplice della nota corrente.
   async function handleSaveNote() {
     if (!userId) {
       setError('Utente non trovato. Ricarica la pagina e riprova.')
@@ -296,6 +308,7 @@ function Notes() {
     }
   }
 
+  // Eliminazione protetta da modale di conferma.
   function openDeleteModal() {
     if (!selectedNoteId) return
     setIsDeleteModalOpen(true)
@@ -334,6 +347,7 @@ function Notes() {
     }
   }
 
+  // Comandi toolbar e modalita fullscreen dell'editor.
   function selectNote(noteId) {
     setSelectedNoteId(noteId)
     setMessage('')

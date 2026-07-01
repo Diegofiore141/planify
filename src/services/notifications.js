@@ -1,3 +1,4 @@
+// Piccoli helper per permessi browser, invio e promemoria eventi.
 export function areNotificationsSupported() {
   return 'Notification' in window
 }
@@ -36,6 +37,7 @@ export function showNotification(title, options = {}) {
   })
 }
 
+// Normalizza la data evento nel formato usato dai timeout.
 export function getEventDateTime(eventItem) {
   if (!eventItem.date || !eventItem.time) {
     throw new Error('Evento senza data o ora.')
@@ -51,6 +53,7 @@ export function getMillisecondsUntilEvent(eventItem) {
   return eventDateTime.getTime() - now.getTime()
 }
 
+// Programma una notifica locale finche' la pagina resta aperta.
 export function scheduleEventNotification(eventItem) {
   const millisecondsUntilEvent = getMillisecondsUntilEvent(eventItem)
 

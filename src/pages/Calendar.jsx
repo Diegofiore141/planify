@@ -24,6 +24,7 @@ import itLocale from '@fullcalendar/core/locales/it'
 import { db } from '../services/firebase'
 import { useAuth } from '../context/AuthContext'
 
+// Helper di formattazione, colori e classificazione usati da FullCalendar.
 function normalizeEmail(email) {
   return email.trim().toLowerCase()
 }
@@ -213,6 +214,7 @@ function addDays(date, days) {
   return result
 }
 
+// Calcola le festivita italiane fisse e mobili mostrate nel calendario.
 function getEasterDate(year) {
   const a = year % 19
   const b = Math.floor(year / 100)
@@ -361,6 +363,7 @@ function Calendar() {
     completed: false,
   })
 
+  // Ascolta eventi e attivita personali dell'utente.
   useEffect(() => {
     if (!userId) return undefined
 
@@ -407,6 +410,7 @@ function Calendar() {
     }
   }, [userId])
 
+  // Ascolta gli eventi pubblici per riconoscere copie e sorgenti mancanti.
   useEffect(() => {
     if (!userId) return undefined
 
@@ -447,6 +451,7 @@ function Calendar() {
     isPublicSourceMissing(eventItem)
   )
 
+  // Stato e toggle della legenda filtrabile del calendario.
   function refreshCalendarColors() {
     setCalendarRenderVersion((previousVersion) => previousVersion + 1)
   }
@@ -549,44 +554,57 @@ function Calendar() {
     refreshCalendarColors()
   }
 
-  function shouldShowEvent(eventKind) {
-    if (eventKind === 'private') return calendarFilters.privateEvents
-    if (eventKind === 'public') return calendarFilters.publicEvents
-    if (eventKind === 'explore') return calendarFilters.exploreEvents
-    if (eventKind === 'invite' || eventKind === 'invited') {
-      return calendarFilters.inviteEvents
-    }
-    if (eventKind === 'unavailable') return areEventFiltersActive()
-
-    return true
-  }
-
-  function shouldShowTask(priority) {
-    if (priority === 'bassa') return calendarFilters.lowTasks
-    if (priority === 'alta') return calendarFilters.highTasks
-    return calendarFilters.mediumTasks
-  }
-
   function getLegendPillClass(baseClass, isActive) {
     return isActive
       ? `${baseClass} legend-filter-pill active`
       : `${baseClass} legend-filter-pill inactive`
   }
 
+  // Converte eventi, attivita e festivita nel formato richiesto da FullCalendar.
   const calendarItems = useMemo(() => {
+    function isPublicSourceMissingForCalendar(eventItem) {
+      if (!eventItem.sourcePublicEventId) return false
+      return !publicEventIds.has(eventItem.sourcePublicEventId)
+    }
+
+    function shouldShowEventInCalendar(eventKind) {
+      if (eventKind === 'private') return calendarFilters.privateEvents
+      if (eventKind === 'public') return calendarFilters.publicEvents
+      if (eventKind === 'explore') return calendarFilters.exploreEvents
+      if (eventKind === 'invite' || eventKind === 'invited') {
+        return calendarFilters.inviteEvents
+      }
+      if (eventKind === 'unavailable') {
+        return (
+          calendarFilters.privateEvents ||
+          calendarFilters.publicEvents ||
+          calendarFilters.exploreEvents ||
+          calendarFilters.inviteEvents
+        )
+      }
+
+      return true
+    }
+
+    function shouldShowTaskInCalendar(priority) {
+      if (priority === 'bassa') return calendarFilters.lowTasks
+      if (priority === 'alta') return calendarFilters.highTasks
+      return calendarFilters.mediumTasks
+    }
+
     const eventItems = events
       .filter((eventItem) => eventItem.date)
       .filter((eventItem) => {
-        const publicSourceMissing = isPublicSourceMissing(eventItem)
+        const publicSourceMissing = isPublicSourceMissingForCalendar(eventItem)
         const eventKind = publicSourceMissing
           ? 'unavailable'
           : getCalendarEventKind(eventItem, userId)
 
-        return shouldShowEvent(eventKind)
+        return shouldShowEventInCalendar(eventKind)
       })
       .map((eventItem) => {
         const hasTime = Boolean(eventItem.time)
-        const publicSourceMissing = isPublicSourceMissing(eventItem)
+        const publicSourceMissing = isPublicSourceMissingForCalendar(eventItem)
 
         const eventKind = publicSourceMissing
           ? 'unavailable'
@@ -634,7 +652,7 @@ function Calendar() {
       .filter((taskItem) => taskItem.dueDate)
       .filter((taskItem) => {
         const priority = taskItem.priority || 'media'
-        return shouldShowTask(priority)
+        return shouldShowTaskInCalendar(priority)
       })
       .map((taskItem) => {
         const priority = taskItem.priority || 'media'
@@ -714,8 +732,15 @@ function Calendar() {
       : []
 
     return [...holidayItems, ...eventItems, ...taskItems]
-  }, [events, tasks, userId, calendarFilters, publicEventIds])
+  }, [
+    events,
+    tasks,
+    userId,
+    calendarFilters,
+    publicEventIds,
+  ])
 
+  // Forza i colori sugli elementi creati da FullCalendar dopo il render.
   function handleEventDidMount(info) {
     const item = info.event.extendedProps
 
@@ -779,6 +804,7 @@ function Calendar() {
     refreshCalendarColors()
   }
 
+  // Apre popup di dettaglio/modifica partendo da un elemento del calendario.
   function getCurrentVisibility(item) {
     if (item.publicSourceMissing) {
       return 'private'
@@ -856,6 +882,7 @@ function Calendar() {
     })
   }
 
+  // Salva drag & drop su Firestore e aggiorna anche sorgenti pubbliche/invito.
   async function handleCalendarItemDrop(info) {
     const item = info.event.extendedProps
     const newStartDate = info.event.start
@@ -975,6 +1002,7 @@ function Calendar() {
     setPopupError('')
   }
 
+  // Creazione rapida dal popup calendario.
   async function handleCreateEvent(event) {
     event.preventDefault()
 
@@ -1089,6 +1117,7 @@ function Calendar() {
     }
   }
 
+  // Modifica elementi esistenti rispettando copie, eventi pubblici e inviti.
   async function handleUpdateEvent(event) {
     event.preventDefault()
 
@@ -1409,6 +1438,7 @@ function Calendar() {
     }
   }
 
+  // Elimina l'elemento selezionato e aggiorna eventuali sorgenti condivise.
   async function handleDeleteSelectedItem() {
     if (!selectedItem) return
 
@@ -1594,6 +1624,11 @@ function Calendar() {
     selectedItem?.type === 'event' &&
     selectedItem?.sourceInviteEventId &&
     selectedItem?.sourceOwnerId !== userId
+
+  const isEditingOwnedInviteEvent =
+    selectedItem?.type === 'event' &&
+    selectedItem?.sourceInviteEventId &&
+    selectedItem?.sourceOwnerId === userId
 
   const isEditingUnavailablePublicEvent =
     selectedItem?.type === 'event' &&
@@ -2561,64 +2596,64 @@ function Calendar() {
                         </p>
                       </div>
                     ) : (
-                      <div className="event-visibility-box">
-                        <span>Visibilità evento</span>
+                      <>
+                        <div className="event-visibility-box">
+                          <span>Visibilità evento</span>
 
-                        <div className="event-visibility-options">
-                          <label
-                            className={
-                              eventForm.visibility === 'private'
-                                ? 'event-visibility-option active'
-                                : 'event-visibility-option'
-                            }
-                          >
-                            <input
-                              type="radio"
-                              name="calendar-edit-visibility"
-                              value="private"
-                              checked={eventForm.visibility === 'private'}
-                              onChange={() =>
-                                setEventForm({
-                                  ...eventForm,
-                                  visibility: 'private',
-                                })
+                          <div className="event-visibility-options">
+                            <label
+                              className={
+                                eventForm.visibility === 'private'
+                                  ? 'event-visibility-option active'
+                                  : 'event-visibility-option'
                               }
-                            />
+                            >
+                              <input
+                                type="radio"
+                                name="calendar-edit-visibility"
+                                value="private"
+                                checked={eventForm.visibility === 'private'}
+                                onChange={() =>
+                                  setEventForm({
+                                    ...eventForm,
+                                    visibility: 'private',
+                                  })
+                                }
+                              />
 
-                            <div>
-                              <strong>Privato</strong>
-                              <p>Lo vedi solo tu nel tuo calendario.</p>
-                            </div>
-                          </label>
+                              <div>
+                                <strong>Privato</strong>
+                                <p>Lo vedi solo tu nel tuo calendario.</p>
+                              </div>
+                            </label>
 
-                          <label
-                            className={
-                              eventForm.visibility === 'public'
-                                ? 'event-visibility-option active'
-                                : 'event-visibility-option'
-                            }
-                          >
-                            <input
-                              type="radio"
-                              name="calendar-edit-visibility"
-                              value="public"
-                              checked={eventForm.visibility === 'public'}
-                              onChange={() =>
-                                setEventForm({
-                                  ...eventForm,
-                                  visibility: 'public',
-                                })
+                            <label
+                              className={
+                                eventForm.visibility === 'public'
+                                  ? 'event-visibility-option active'
+                                  : 'event-visibility-option'
                               }
-                            />
+                            >
+                              <input
+                                type="radio"
+                                name="calendar-edit-visibility"
+                                value="public"
+                                checked={eventForm.visibility === 'public'}
+                                onChange={() =>
+                                  setEventForm({
+                                    ...eventForm,
+                                    visibility: 'public',
+                                  })
+                                }
+                              />
 
-                            <div>
-                              <strong>Pubblico</strong>
-                              <p>Compare anche in Esplora eventi.</p>
-                            </div>
-                          </label>
+                              <div>
+                                <strong>Pubblico</strong>
+                                <p>Compare anche in Esplora eventi.</p>
+                              </div>
+                            </label>
 
-                          {selectedItem.sourceInviteEventId &&
-                            selectedItem.sourceOwnerId === userId && (
+                            {isEditingOwnedInviteEvent && (
                               <label
                                 className={
                                   eventForm.visibility === 'invite'
@@ -2648,8 +2683,28 @@ function Calendar() {
                                 </div>
                               </label>
                             )}
+                          </div>
                         </div>
-                      </div>
+
+                        <div className="calendar-invite-helper-box">
+                          <div>
+                            <strong>
+                              {isEditingOwnedInviteEvent
+                                ? 'Evento su invito'
+                                : 'Vuoi renderlo su invito?'}
+                            </strong>
+                            <p>
+                              {isEditingOwnedInviteEvent
+                                ? 'Puoi modificare i dettagli da qui. Per email e partecipanti usa la pagina Eventi.'
+                                : 'Gli eventi su invito richiedono email e partecipanti. Continua dalla pagina Eventi.'}
+                            </p>
+                          </div>
+
+                          <Link to="/events" className="btn btn-secondary">
+                            Vai a Eventi
+                          </Link>
+                        </div>
+                      </>
                     )}
 
                     {popupError && (

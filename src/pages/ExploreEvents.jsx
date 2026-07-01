@@ -16,6 +16,7 @@ import {
 import { db } from '../services/firebase'
 import { useAuth } from '../context/AuthContext'
 
+// Helper per date e nomi partecipanti mostrati in Esplora.
 function getTodayDateKey() {
   const today = new Date()
   const year = today.getFullYear()
@@ -62,6 +63,7 @@ function ExploreEvents() {
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
 
+  // Ascolta tutti gli eventi pubblici disponibili in Esplora.
   useEffect(() => {
     if (!userId) return undefined
 
@@ -89,6 +91,7 @@ function ExploreEvents() {
     }
   }, [userId])
 
+  // Ascolta gli eventi personali per capire cosa e' gia stato aggiunto.
   useEffect(() => {
     if (!userId) return undefined
 
@@ -118,6 +121,7 @@ function ExploreEvents() {
 
   const today = getTodayDateKey()
 
+  // Dati derivati per ricerca, filtri e stato di partecipazione.
   const savedPublicEventIds = useMemo(() => {
     return new Set(
       personalEvents
@@ -163,6 +167,7 @@ function ExploreEvents() {
     })
   }, [futurePublicEvents, searchTerm, activeFilter, savedPublicEventIds, userId])
 
+  // Crea un evento pubblico e ne salva anche la copia personale.
   async function handleCreatePublicEvent(event) {
     event.preventDefault()
 
@@ -232,6 +237,7 @@ function ExploreEvents() {
     }
   }
 
+  // Aggiunge al calendario personale un evento creato da altri.
   async function handleSavePublicEvent(publicEvent) {
     setError('')
     setMessage('')
@@ -658,7 +664,7 @@ function ExploreEvents() {
                 Titolo evento
                 <input
                   type="text"
-                  placeholder="Es. Masterclass Bachata"
+                  placeholder="Es. Evento pubblico"
                   value={title}
                   onChange={(event) => setTitle(event.target.value)}
                 />
@@ -688,7 +694,7 @@ function ExploreEvents() {
                 Luogo
                 <input
                   type="text"
-                  placeholder="Es. Ponsacco"
+                  placeholder="Es. Online o luogo dell'evento"
                   value={location}
                   onChange={(event) => setLocation(event.target.value)}
                 />

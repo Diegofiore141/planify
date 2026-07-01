@@ -5,6 +5,7 @@ function Offline() {
   const [message, setMessage] = useState('')
   const [checking, setChecking] = useState(false)
 
+  // Riprova a raggiungere il file statico usato per capire se si e' online.
   async function handleRetry() {
     setMessage('Controllo connessione...')
     setChecking(true)
@@ -25,6 +26,7 @@ function Offline() {
     }
   }
 
+  // Evita una navigazione inutile se la connessione non e' ancora tornata.
   function handleGoHome() {
     if (!navigator.onLine) {
       setMessage(
@@ -36,6 +38,7 @@ function Offline() {
     window.location.href = '/'
   }
 
+  // La pagina offline ha CSS inline per funzionare anche fuori dal bundle.
   return (
     <main className="offline-page-v2">
       <style>

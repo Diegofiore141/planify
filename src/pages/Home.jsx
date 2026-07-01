@@ -3,6 +3,7 @@ import { Link } from 'react-router'
 import logo from '../assets/logo.png'
 import SoftAuroraBackground from '../components/SoftAuroraBackground'
 
+// Contenuti statici usati dall'anteprima interattiva della home.
 const previewDays = [
   {
     label: 'Oggi',
@@ -130,6 +131,7 @@ const workflowSteps = [
 function Home() {
   const [activePreview, setActivePreview] = useState(0)
 
+  // Cambia il contenuto della card demo senza dati reali o login.
   const currentPreview = previewDays[activePreview]
 
   return (

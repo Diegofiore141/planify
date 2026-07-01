@@ -7,6 +7,7 @@ import { auth, db } from '../services/firebase'
 import { useAuth } from '../context/AuthContext'
 import logo from '../assets/logo.png'
 
+// Helper di formattazione per riepiloghi e card dashboard.
 function getTodayDateKey() {
   const today = new Date()
   const year = today.getFullYear()
@@ -67,6 +68,7 @@ function Dashboard() {
   const [tasks, setTasks] = useState([])
   const [notes, setNotes] = useState([])
 
+  // Ascolta in tempo reale eventi, attivita e note dell'utente.
   useEffect(() => {
     if (!user) return
 
@@ -114,6 +116,7 @@ function Dashboard() {
 
   const today = getTodayDateKey()
 
+  // Dati derivati usati da statistiche, prossimi impegni e scorciatoie.
   const upcomingEvents = useMemo(() => {
     return events
       .filter((event) => event.date >= today)
@@ -154,6 +157,7 @@ function Dashboard() {
   const nextTask = urgentTasks[0]
   const lastNote = recentNotes[0]
 
+  // Esce da Firebase Auth e riporta alla home pubblica.
   async function handleLogout() {
     await signOut(auth)
     navigate('/')
@@ -173,6 +177,7 @@ function Dashboard() {
 
           <div className="dashboard-pro-navbar-links">
             <Link to="/calendar">Agenda</Link>
+            <Link to="/events">Eventi</Link>
             <Link to="/notes">Note</Link>
             <Link to="/explore">Esplora</Link>
             <Link to="/tasks">Attività</Link>

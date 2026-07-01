@@ -10,6 +10,7 @@ function ProtectedRoute({ children }) {
   const [checkingVerification, setCheckingVerification] = useState(true)
   const [isVerified, setIsVerified] = useState(false)
 
+  // Aggiorna l'utente e blocca le pagine private se l'email non e' verificata.
   useEffect(() => {
     async function checkEmailVerification() {
       if (loading) return
@@ -51,6 +52,7 @@ function ProtectedRoute({ children }) {
     )
   }
 
+  // Senza utente valido si torna al login, con messaggio se manca la verifica.
   if (!user) {
     return <Navigate to="/login" replace />
   }

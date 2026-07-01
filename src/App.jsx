@@ -17,6 +17,7 @@ import Calendar from './pages/Calendar'
 import ExploreEvents from './pages/ExploreEvents'
 import Notes from './pages/Notes'
 
+// Cattura errori di una pagina senza bloccare tutta l'app.
 class PageErrorBoundary extends Component {
   constructor(props) {
     super(props)
@@ -70,6 +71,7 @@ class PageErrorBoundary extends Component {
   }
 }
 
+// Riporta la pagina in alto a ogni cambio rotta.
 function ScrollToTop() {
   const { pathname } = useLocation()
 
@@ -87,6 +89,7 @@ function ScrollToTop() {
 function App() {
   const [isOnline, setIsOnline] = useState(true)
 
+  // Controllo online/offline usato per mostrare il fallback PWA.
   useEffect(() => {
     async function checkConnection() {
       if (!navigator.onLine) {
@@ -131,6 +134,7 @@ function App() {
     return <Offline />
   }
 
+  // Le rotte protette passano dal controllo login e verifica email.
   return (
     <AuthProvider>
       <BrowserRouter>

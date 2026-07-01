@@ -23,6 +23,7 @@ import {
   scheduleEventNotification,
 } from '../services/notifications'
 
+// Helper per date, email invito e stato visibilita degli eventi.
 function getTodayDateKey() {
   const today = new Date()
   const year = today.getFullYear()
@@ -263,6 +264,7 @@ function buildInviteEmailBody(eventItem, ownerName) {
 function Events() {
   const { user } = useAuth()
   const inviteInputRef = useRef(null)
+  const eventFormRef = useRef(null)
 
   const userId = user?.uid || ''
   const userEmail = user?.email || ''
@@ -291,11 +293,14 @@ function Events() {
   const [weatherByEvent, setWeatherByEvent] = useState({})
   const [weatherLoading, setWeatherLoading] = useState('')
   const [weatherError, setWeatherError] = useState('')
+  const [weatherErrorEventId, setWeatherErrorEventId] = useState('')
 
   const [reminderByEvent, setReminderByEvent] = useState({})
   const [scheduledReminders, setScheduledReminders] = useState({})
   const [reminderError, setReminderError] = useState('')
+  const [reminderErrorEventId, setReminderErrorEventId] = useState('')
 
+  // Ascolta gli eventi personali dell'utente.
   useEffect(() => {
     if (!userId) return undefined
 
@@ -321,6 +326,7 @@ function Events() {
     return () => unsubscribe()
   }, [userId])
 
+  // Ascolta gli eventi pubblici per confrontare copie e partecipazioni.
   useEffect(() => {
     if (!userId) return undefined
 
@@ -345,6 +351,7 @@ function Events() {
     return () => unsubscribe()
   }, [userId])
 
+  // Ascolta gli eventi su invito e poi filtra quelli relativi all'utente.
   useEffect(() => {
     if (!userId || !userEmail) return undefined
 
@@ -388,6 +395,7 @@ function Events() {
     return savedEventsMap
   }, [events])
 
+  // Ricostruisce la sorgente ufficiale quando un evento e' pubblico o su invito.
   function getPublicSourceEvent(eventItem) {
     if (!eventItem?.sourcePublicEventId) return null
 
@@ -458,6 +466,7 @@ function Events() {
     )
   }
 
+  // Inviti ancora da accettare o rifiutare.
   const pendingInvites = useMemo(() => {
     const normalizedUserEmail = normalizeEmail(userEmail)
 
@@ -501,17 +510,40 @@ function Events() {
   )
 
   const visibleEvents = useMemo(() => {
+    function getDisplayDataForList(eventItem) {
+      const officialSourceEvent = eventItem?.sourceInviteEventId
+        ? inviteEvents.find(
+            (inviteEvent) => inviteEvent.id === eventItem.sourceInviteEventId
+          ) || null
+        : eventItem?.sourcePublicEventId
+          ? publicEvents.find(
+              (publicEvent) => publicEvent.id === eventItem.sourcePublicEventId
+            ) || null
+          : null
+
+      const personalChanges = Boolean(
+        eventItem?.hasPersonalChanges &&
+          (eventItem.sourceInviteEventId || eventItem.sourcePublicEventId)
+      )
+
+      if (officialSourceEvent && !personalChanges) {
+        return officialSourceEvent
+      }
+
+      return eventItem
+    }
+
     return events
       .filter((eventItem) => {
-        const displayEvent = getEventDisplayData(eventItem)
+        const displayEvent = getDisplayDataForList(eventItem)
 
         if (filter === 'future') return displayEvent.date >= today
         if (filter === 'past') return displayEvent.date < today
         return true
       })
       .sort((firstEvent, secondEvent) => {
-        const firstDisplayEvent = getEventDisplayData(firstEvent)
-        const secondDisplayEvent = getEventDisplayData(secondEvent)
+        const firstDisplayEvent = getDisplayDataForList(firstEvent)
+        const secondDisplayEvent = getDisplayDataForList(secondEvent)
 
         const firstDate = `${firstDisplayEvent.date || '9999-12-31'}T${
           firstDisplayEvent.time || '00:00'
@@ -547,6 +579,7 @@ function Events() {
     editingEvent && isInviteSourceMissing(editingEvent)
   )
 
+  // Gestione chip email nel form degli eventi su invito.
   function addInviteEmailsFromText(text) {
     const newEmails = getInviteEmailsFromText(text)
 
@@ -618,6 +651,39 @@ function Events() {
     setError('')
   }
 
+  function scrollEventFormIntoViewOnMobile() {
+    if (typeof window === 'undefined') return
+    if (!window.matchMedia('(max-width: 768px)').matches) return
+
+    window.requestAnimationFrame(() => {
+      eventFormRef.current?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      })
+    })
+  }
+
+  // Messaggi inline per meteo e promemoria sulle singole card evento.
+  function showWeatherError(eventId, errorMessage) {
+    setWeatherError(errorMessage)
+    setWeatherErrorEventId(eventId)
+  }
+
+  function clearWeatherErrorMessage() {
+    setWeatherError('')
+    setWeatherErrorEventId('')
+  }
+
+  function showReminderError(eventId, errorMessage) {
+    setReminderError(errorMessage)
+    setReminderErrorEventId(eventId)
+  }
+
+  function clearReminderErrorMessage() {
+    setReminderError('')
+    setReminderErrorEventId('')
+  }
+
   function clearEventWeather(eventId) {
     setWeatherByEvent((previousWeather) => {
       const updatedWeather = { ...previousWeather }
@@ -662,6 +728,7 @@ function Events() {
     window.location.assign(mailtoUrl)
   }
 
+  // Rimuove sorgenti condivise quando un evento cambia visibilita.
   async function removeOwnedPublicEventIfPossible(batch, eventToEdit) {
     if (!eventToEdit?.sourcePublicEventId) return true
 
@@ -712,6 +779,7 @@ function Events() {
     }
   }
 
+  // Flusso partecipanti degli eventi su invito.
   async function handleAcceptInvite(inviteEvent) {
     setError('')
     setMessage('')
@@ -1045,6 +1113,7 @@ function Events() {
     }
   }
 
+  // Crea o aggiorna eventi privati, pubblici e su invito.
   async function handleSaveEvent(event) {
     event.preventDefault()
 
@@ -1485,6 +1554,7 @@ function Events() {
     }
   }
 
+  // Prepara il form quando si modifica una card evento.
   function handleStartEdit(eventItem) {
     const inviteSourceEvent = getInviteSourceEvent(eventItem)
     const publicSourceEvent = getPublicSourceEvent(eventItem)
@@ -1520,10 +1590,12 @@ function Events() {
 
     setError('')
     setMessage('')
-    setWeatherError('')
-    setReminderError('')
+    clearWeatherErrorMessage()
+    clearReminderErrorMessage()
+    scrollEventFormIntoViewOnMobile()
   }
 
+  // Azioni sulle copie personali e cancellazione eventi.
   async function handleKeepPersonalCopy(eventId) {
     const eventToKeep = events.find((eventItem) => eventItem.id === eventId)
 
@@ -1711,16 +1783,19 @@ function Events() {
     }
   }
 
+  // Servizi extra collegati alle card: meteo e promemoria browser.
   async function handleShowWeather(eventItem) {
     if (isPublicSourceMissing(eventItem)) {
-      setWeatherError(
+      showWeatherError(
+        eventItem.id,
         'Questo evento pubblico non è più disponibile. Puoi mantenerlo come copia personale oppure rimuoverlo dal calendario.'
       )
       return
     }
 
     if (isInviteSourceMissing(eventItem)) {
-      setWeatherError(
+      showWeatherError(
+        eventItem.id,
         'Questo evento su invito non è più disponibile. Puoi mantenerlo come copia personale oppure rimuoverlo dal calendario.'
       )
       return
@@ -1729,16 +1804,19 @@ function Events() {
     const displayEvent = getEventDisplayData(eventItem)
 
     if (!displayEvent.location) {
-      setWeatherError('Inserisci un luogo per vedere il meteo.')
+      showWeatherError(eventItem.id, 'Inserisci un luogo per vedere il meteo.')
       return
     }
 
     if (!displayEvent.date || !displayEvent.time) {
-      setWeatherError('Inserisci data e ora per vedere il meteo previsto.')
+      showWeatherError(
+        eventItem.id,
+        'Inserisci data e ora per vedere il meteo previsto.'
+      )
       return
     }
 
-    setWeatherError('')
+    clearWeatherErrorMessage()
     setWeatherLoading(eventItem.id)
 
     clearEventWeather(eventItem.id)
@@ -1756,25 +1834,30 @@ function Events() {
       }))
     } catch (weatherRequestError) {
       console.error(weatherRequestError)
-      setWeatherError('Meteo non disponibile per questo luogo, data o ora.')
+      showWeatherError(
+        eventItem.id,
+        'Meteo non disponibile per questo luogo, data o ora.'
+      )
     } finally {
       setWeatherLoading('')
     }
   }
 
   async function handleScheduleReminder(eventItem) {
-    setReminderError('')
+    clearReminderErrorMessage()
     setMessage('')
 
     if (isPublicSourceMissing(eventItem)) {
-      setReminderError(
+      showReminderError(
+        eventItem.id,
         'Questo evento pubblico non è più disponibile. Puoi mantenerlo come copia personale oppure rimuoverlo dal calendario.'
       )
       return
     }
 
     if (isInviteSourceMissing(eventItem)) {
-      setReminderError(
+      showReminderError(
+        eventItem.id,
         'Questo evento su invito non è più disponibile. Puoi mantenerlo come copia personale oppure rimuoverlo dal calendario.'
       )
       return
@@ -1783,7 +1866,10 @@ function Events() {
     const displayEvent = getEventDisplayData(eventItem)
 
     if (!displayEvent.date || !displayEvent.time) {
-      setReminderError('Inserisci data e ora per attivare il promemoria.')
+      showReminderError(
+        eventItem.id,
+        'Inserisci data e ora per attivare il promemoria.'
+      )
       return
     }
 
@@ -1795,7 +1881,8 @@ function Events() {
       }
 
       if (permission !== 'granted') {
-        setReminderError(
+        showReminderError(
+          eventItem.id,
           'Devi consentire le notifiche per attivare un promemoria.'
         )
         return
@@ -1823,7 +1910,8 @@ function Events() {
       setMessage('Promemoria attivato correttamente.')
     } catch (reminderRequestError) {
       console.error(reminderRequestError)
-      setReminderError(
+      showReminderError(
+        eventItem.id,
         'Promemoria non attivato. Controlla che data e ora siano future.'
       )
     }
@@ -1989,6 +2077,7 @@ function Events() {
 
         <div className="events-grid improved-events-grid">
           <form
+            ref={eventFormRef}
             className="event-form improved-event-form"
             onSubmit={handleSaveEvent}
           >
@@ -2253,8 +2342,16 @@ function Events() {
               </div>
             </div>
 
-            {weatherError && <p className="error-message">{weatherError}</p>}
-            {reminderError && <p className="error-message">{reminderError}</p>}
+            {weatherError && (
+              <p className="error-message events-list-feedback">
+                {weatherError}
+              </p>
+            )}
+            {reminderError && (
+              <p className="error-message events-list-feedback">
+                {reminderError}
+              </p>
+            )}
 
             {visibleEvents.length === 0 ? (
               <div className="events-empty-box">
@@ -2657,6 +2754,20 @@ function Events() {
                           <p>{reminderByEvent[eventItem.id]}</p>
                         </div>
                       )}
+
+                      {weatherError &&
+                        weatherErrorEventId === eventItem.id && (
+                          <p className="event-card-feedback error-message">
+                            {weatherError}
+                          </p>
+                        )}
+
+                      {reminderError &&
+                        reminderErrorEventId === eventItem.id && (
+                          <p className="event-card-feedback error-message">
+                            {reminderError}
+                          </p>
+                        )}
                     </div>
 
                     <div className="event-actions improved-event-actions">

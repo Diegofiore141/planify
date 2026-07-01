@@ -1,3 +1,4 @@
+// Sfondo decorativo riutilizzato nelle pagine pubbliche e auth.
 function SoftAuroraBackground() {
   return (
     <div className="soft-aurora-background" aria-hidden="true">

@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Planify - Offline</title>
 
+    <!-- Stili inline: devono funzionare anche quando il bundle React non carica. -->
     <style>
       * {
         box-sizing: border-box;
@@ -345,6 +346,7 @@
   </head>
 
   <body>
+    <!-- Fallback statico mostrato dalla PWA quando manca la connessione. -->
     <main class="offline-card">
       <section>
         <div class="offline-logo">
@@ -420,6 +422,7 @@
     </main>
 
     <script>
+      // Riprova la connessione usando lo stesso file statico controllato dall'app.
       const statusMessage = document.getElementById('offline-status')
 
       async function retryConnection() {

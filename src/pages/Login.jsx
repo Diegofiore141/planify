@@ -13,6 +13,7 @@ import { auth } from '../services/firebase'
 import logo from '../assets/logo.png'
 import SoftAuroraBackground from '../components/SoftAuroraBackground'
 
+// Validazione input e messaggi leggibili per errori Firebase Auth.
 function normalizeEmail(email) {
   return email.trim().toLowerCase()
 }
@@ -91,6 +92,7 @@ function Login() {
   const [resetLoading, setResetLoading] = useState(false)
   const [verificationLoading, setVerificationLoading] = useState(false)
 
+  // Usato quando l'utente richiede un nuovo link di verifica email.
   function validateEmailAndPasswordForVerification() {
     const cleanEmail = normalizeEmail(email)
 
@@ -109,6 +111,7 @@ function Login() {
     return ''
   }
 
+  // Login classico: blocca l'accesso se l'email non e' verificata.
   async function handleLogin(event) {
     event.preventDefault()
 
@@ -164,6 +167,7 @@ function Login() {
     }
   }
 
+  // Reinvia la mail di verifica dopo aver confermato email e password.
   async function handleResendVerificationEmail() {
     if (loading || resetLoading || verificationLoading) return
 
@@ -212,6 +216,7 @@ function Login() {
     }
   }
 
+  // Invia la mail Firebase per reimpostare la password.
   async function handlePasswordReset() {
     if (loading || resetLoading || verificationLoading) return
 
@@ -246,6 +251,7 @@ function Login() {
     }
   }
 
+  // Login rapido tramite account Google.
   async function handleGoogleLogin() {
     if (loading || resetLoading || verificationLoading) return
 

@@ -1,3 +1,4 @@
+// Codici meteo Open-Meteo tradotti in etichette leggibili.
 const weatherDescriptions = {
   0: 'Cielo sereno',
   1: 'Prevalentemente sereno',
@@ -20,6 +21,7 @@ const weatherDescriptions = {
   95: 'Temporale',
 }
 
+// Cerca la citta', poi recupera la previsione oraria per data e ora evento.
 export async function getWeatherForCity(city, date, time) {
   if (!city) {
     throw new Error('Inserisci una città valida.')
